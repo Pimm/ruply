@@ -13,12 +13,34 @@ function resolveShortly(value) {
 }
 
 test('explicit-this', () => {
-	expect.assertions(8);
+	expect.assertions(16);
 	// Simple run.
 	(() => {
 		var context;
 		expect(
 			run.call('context', 'value', function() {
+				context = this;
+				return 'result';
+			})
+		).toBe('result');
+		expect(context).toBe('context');
+	})();
+	// run with true null behaviour.
+	(() => {
+		var context;
+		expect(
+			run.call('context', null, function() {
+				context = this;
+				return 'result';
+			}, true)
+		).toBe('result');
+		expect(context).toBe('context');
+	})();
+	// run with alternative null behaviour.
+	(() => {
+		var context;
+		expect(
+			run.call('context', null, () => {}, function() {
 				context = this;
 				return 'result';
 			})
@@ -34,6 +56,28 @@ test('explicit-this', () => {
 				return 'result';
 			})
 		).toBe('value');
+		expect(context).toBe('context');
+	})();
+	// apply with true null behaviour.
+	(() => {
+		var context;
+		expect(
+			apply.call('context', null, function() {
+				context = this;
+				return 'result';
+			}, true)
+		).toBe(null);
+		expect(context).toBe('context');
+	})();
+	// apply with alternative null behaviour.
+	(() => {
+		var context;
+		expect(
+			apply.call('context', null, () => {}, function() {
+				context = this;
+				return 'result';
+			})
+		).toBe(null);
 		expect(context).toBe('context');
 	})();
 	return Promise.all([

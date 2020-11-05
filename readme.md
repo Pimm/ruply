@@ -92,7 +92,7 @@ return apply(
 );
 ```
 
-## Check in return statement.
+## Check in return statement
 
 ```javascript
 const index = array.indexOf(value);

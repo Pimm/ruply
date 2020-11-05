@@ -5,8 +5,6 @@ import checkThenable from './checkThenable';
  */
 function build(name, logic) {
 	function result(value, callback) {
-		// (Adding this line explicitly instead of having Babel do it produces slightly shorter code.)
-		var context = this;
 		// Ensure the callback is a function.
 		if ('function' != typeof callback) {
 			// throw new TypeError(`${callback} is not a function`);
@@ -14,14 +12,34 @@ function build(name, logic) {
 			//     overly complex.)
 			throw new TypeError(callback + ' is not a function');
 		}
+		// Get the (optional) null behaviour argument.
+		const nullBehavior = arguments.length > 2 && arguments[2],
+		// (Adding this line explicitly instead of having Babel do it produces slightly shorter code.)
+			context = this;
 		// If the value is thenable, recall this function (recursively) once it resolves.
 		if (checkThenable(value)) {
-			return value.then(value => result.call(context, value, callback));
+			return value.then(value => result.call(context, value, callback, nullBehavior));
+		}
+		// If the null behaviour argument is false (or omitted), drop the callback if the value is null-ish.
+		if (false === nullBehavior) {
+			if (null == value) {
+				callback = undefined;
+			}
+		// If the null behaviour argument is a function, use that instead of the callback if the value is null-ish.
+		} else if ('function' == typeof nullBehavior) {
+			if (null == value) {
+				callback = nullBehavior;
+			}
+		// If the null behaviour argument is not false nor a function, it must be true. Ensure it is.
+		} else if (true !== nullBehavior) {
+			// throw new TypeError(`${nullBehavior} is not a boolean value nor a function`);
+			//   ↓
+			throw new TypeError(nullBehavior + ' is not a boolean value nor a function');
 		}
 		// Apply the logic.
 		return logic.call(context, value, callback);
 	};
-	// Have the resulting function borrow the name of the logic.
+	// Give the resulting function the appropriate name.
 	Object.defineProperty(result, 'name', {
 		value: name,
 		/* writable: false, */
@@ -31,26 +49,30 @@ function build(name, logic) {
 	return result;
 }
 /**
- * Calls the passed callback ‒ forwarding the value and routing back whatever it returns ‒ if the passed value is not
- * null-ish. If the passed value is null-ish, it is returned directly and the passed callback is not called.
+ * Calls the passed callback ‒ forwarding the value and routing back whatever is returned ‒ if the passed value is not
+ * null-ish. If the passed value is null-ish, behaviour is defined by the third argument. By default (third argument is
+ * omitted), a null-ish value is returned directly and the passed callback is skipped.
  */
 export const run = build('run', function run(value, callback) {
-	// If the value is null-ish, return it directly. Otherwise call the callback, and return the result.
-	return null != value ? callback.call(this, value) : value;
+	// If the callback is undefined, return the value directly. Otherwise call the callback, and return the result. (Note
+	// that the truthy check here is safe, as the callback can only be undefined or a function at this point.)
+	return callback ? callback.call(this, value) : value;
 });
 /**
  * Calls the passed callback ‒ forwarding the value and returning it afterwards ‒ if the passed value is not null-ish.
- * If the passed value is null-ish, it is returned directly and the passed callback is not called.
+ * If the passed value is null-ish, behaviour is defined by the third argument. By default (third argument is omitted),
+ * a null-ish value is returned directly and the passed callback is skipped.
  */
 export const apply = build('apply', function apply(value, callbackOrResult) {
 	if (
-		// If the value is null-ish, return it directly…
-		null != value
+		// If the callback is undefined, return the value directly…
+		callbackOrResult
 		// …otherwise call the callback. If the result of the callback is thenable, chain a function to it which will
 		// return the value, and return the chain.
 		&& checkThenable(
 			callbackOrResult = callbackOrResult.call(this, value)
 		)
+		// (The truthy check above is safe, as the callback can only be undefined or a function at this point.)
 	) {
 		return callbackOrResult.then(() => value);
 	}
