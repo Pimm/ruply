@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { run, apply } from '..';
+import { run, runIf, apply, applyIf } from '..';
 
 function pause() {
 	return new Promise(resolve => void setTimeout(resolve, 10));
@@ -14,7 +14,7 @@ function resolveShortly(value) {
 
 test('explicit-this', () => {
 	expect.assertions(16);
-	// Simple run.
+	// run(If).
 	(() => {
 		var context;
 		expect(
@@ -25,29 +25,17 @@ test('explicit-this', () => {
 		).toBe('result');
 		expect(context).toBe('context');
 	})();
-	// run with true null behaviour.
 	(() => {
 		var context;
 		expect(
-			run.call('context', null, function() {
-				context = this;
-				return 'result';
-			}, true)
-		).toBe('result');
-		expect(context).toBe('context');
-	})();
-	// run with alternative null behaviour.
-	(() => {
-		var context;
-		expect(
-			run.call('context', null, () => {}, function() {
+			runIf.call('context', 'value', function() {
 				context = this;
 				return 'result';
 			})
 		).toBe('result');
 		expect(context).toBe('context');
 	})();
-	// Simple apply.
+	// apply(If).
 	(() => {
 		var context;
 		expect(
@@ -58,30 +46,18 @@ test('explicit-this', () => {
 		).toBe('value');
 		expect(context).toBe('context');
 	})();
-	// apply with true null behaviour.
 	(() => {
 		var context;
 		expect(
-			apply.call('context', null, function() {
-				context = this;
-				return 'result';
-			}, true)
-		).toBe(null);
-		expect(context).toBe('context');
-	})();
-	// apply with alternative null behaviour.
-	(() => {
-		var context;
-		expect(
-			apply.call('context', null, () => {}, function() {
+			applyIf.call('context', 'value', function() {
 				context = this;
 				return 'result';
 			})
-		).toBe(null);
+		).toBe('value');
 		expect(context).toBe('context');
 	})();
 	return Promise.all([
-		// run with promise.
+		// run(If) with promise.
 		(() => {
 			var context;
 			return expect(
@@ -92,11 +68,31 @@ test('explicit-this', () => {
 			).resolves.toBe('result')
 			.then(() => expect(context).toBe('context'));
 		})(),
-		// apply with promise.
+		(() => {
+			var context;
+			return expect(
+				runIf.call('context', resolveShortly('value'), function() {
+					context = this;
+					return 'result';
+				})
+			).resolves.toBe('result')
+			.then(() => expect(context).toBe('context'));
+		})(),
+		// apply(If) with promise.
 		(() => {
 			var context;
 			return expect(
 				apply.call('context', resolveShortly('value'), function() {
+					context = this;
+					return 'result';
+				})
+			).resolves.toBe('value')
+			.then(() => expect(context).toBe('context'));
+		})(),
+		(() => {
+			var context;
+			return expect(
+				applyIf.call('context', resolveShortly('value'), function() {
 					context = this;
 					return 'result';
 				})

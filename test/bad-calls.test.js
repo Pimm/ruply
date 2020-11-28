@@ -2,13 +2,11 @@
  * @jest-environment node
  */
 
-import { run, apply } from '..';
+import { run, runIf, apply, applyIf } from '..';
 
 test('bad-calls', () => {
-	expect(() => run('value', 'not-a-function')).toThrow('is not a function');
-	expect(() => apply('value', 'not-a-function')).toThrow('is not a function');
-	expect(() => run('value')).toThrow('is not a function');
-	expect(() => apply('value')).toThrow('is not a function');
-	expect(() => run('value', () => 'result', 'garbage')).toThrow('is not a boolean value nor a function');
-	expect(() => apply('value', () => 'result', 'garbage')).toThrow('is not a boolean value nor a function');
+	const implementations = [run, runIf, apply, applyIf];
+	implementations.forEach(implementation => expect(() => implementation('value', 'not-a-function')).toThrow('is not a function'));
+	implementations.forEach(implementation => expect(() => implementation('value')).toThrow('is not a function'));
+	implementations.forEach(implementation => expect(() => implementation('value', () => 'result', 'garbage')).toThrow('is not a function'));
 });

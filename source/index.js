@@ -1,10 +1,12 @@
 import checkThenable from './checkThenable';
 
+// Steal the splice function from this empty array.
+const { splice } = [];
 /**
  * Builds a ruply function from the passed logic.
  */
-function build(name, logic) {
-	function result(value, callback) {
+function build(name, logic, skipIfNullish) {
+	function implementation(value, callback) {
 		// Ensure the callback is a function.
 		if ('function' != typeof callback) {
 			// throw new TypeError(`${callback} is not a function`);
@@ -12,69 +14,73 @@ function build(name, logic) {
 			//     overly complex.)
 			throw new TypeError(callback + ' is not a function');
 		}
-		// Get the (optional) null behaviour argument.
-		const nullBehavior = arguments.length > 2 && arguments[2],
-		// (Adding this line explicitly instead of having Babel do it produces slightly shorter code.)
-			context = this;
+		// (Storing the context here explicitly instead of having Babel do it produces slightly shorter code.)
+		const context = this,
+			valueAndCallbacks = arguments;
+		var result;
 		// If the value is thenable, recall this function (recursively) once it resolves.
 		if (checkThenable(value)) {
-			return value.then(value => result.call(context, value, callback, nullBehavior));
+			return value.then(value => {
+				// const [_, ...callbacks] = arguments;
+				// return implementation.call(context, value, ...callbacks);
+				//   ↓
+				valueAndCallbacks[0] = value;
+				return implementation.apply(context, valueAndCallbacks);
+			});
 		}
-		// If the null behaviour argument is false (or omitted), drop the callback if the value is null-ish.
-		if (false === nullBehavior) {
-			if (null == value) {
-				callback = undefined;
-			}
-		// If the null behaviour argument is a function, use that instead of the callback if the value is null-ish.
-		} else if ('function' == typeof nullBehavior) {
-			if (null == value) {
-				callback = nullBehavior;
-			}
-		// If the null behaviour argument is not false nor a function, it must be true. Ensure it is.
-		} else if (true !== nullBehavior) {
-			// throw new TypeError(`${nullBehavior} is not a boolean value nor a function`);
+		// Apply the logic, passing the callback if skipIfNullish is not set or the value is not null-ish.
+		result = logic.call(context, value, (skipIfNullish && null == value) ? undefined : callback);
+		// If there are more callbacks (callback other than the one from the line above), recall this function
+		// (recursively) with the new value.
+		if (valueAndCallbacks.length > 2) {
+			// const [_, firstCallback, ...otherCallbacks] = arguments;
+			// return implementation.call(context, result, ...otherCallbacks);
 			//   ↓
-			throw new TypeError(nullBehavior + ' is not a boolean value nor a function');
+			splice.call(valueAndCallbacks, 0, 2, result);
+			return implementation.apply(context, valueAndCallbacks);
+		// If there are no more callbacks, return the value.
+		} else /* if (2 == valueAndCallbacks.length) */ {
+			return result;
 		}
-		// Apply the logic.
-		return logic.call(context, value, callback);
 	};
-	// Give the resulting function the appropriate name.
-	Object.defineProperty(result, 'name', {
+	// Give the resulting function the appropriate name. (Ironically, this would have been a great place to use apply.)
+	Object.defineProperty(implementation, 'name', {
 		value: name,
 		/* writable: false, */
 		/* enumerable: false, */
 		configurable: true
 	});
-	return result;
+	return implementation;
 }
+const runLogic = function(value, callback) {
+	return callback ? callback.call(this, value) : value;
+};
+const applyLogic = function(value, callback, result) {
+	if (
+		// If the callback is undefined, return the value directly…
+		callback
+		// …otherwise call the callback. If the result of the callback is thenable, chain a function to it which will
+		// return the value, and return the chain.
+		&& checkThenable(
+			result = callback.call(this, value)
+		)
+		// (The truthy check above is safe, as the callback can only be undefined or a function at this point.)
+	) {
+		return result.then(() => value);
+	}
+	return value;
+};
 /**
  * Calls the passed callback ‒ forwarding the value and routing back whatever is returned ‒ if the passed value is not
  * null-ish. If the passed value is null-ish, behaviour is defined by the third argument. By default (third argument is
  * omitted), a null-ish value is returned directly and the passed callback is skipped.
  */
-export const run = build('run', function run(value, callback) {
-	// If the callback is undefined, return the value directly. Otherwise call the callback, and return the result. (Note
-	// that the truthy check here is safe, as the callback can only be undefined or a function at this point.)
-	return callback ? callback.call(this, value) : value;
-});
+export const run = build('run', runLogic /* , undefined */),
+	runIf = build('runIf', runLogic, true),
 /**
  * Calls the passed callback ‒ forwarding the value and returning it afterwards ‒ if the passed value is not null-ish.
  * If the passed value is null-ish, behaviour is defined by the third argument. By default (third argument is omitted),
  * a null-ish value is returned directly and the passed callback is skipped.
  */
-export const apply = build('apply', function apply(value, callbackOrResult) {
-	if (
-		// If the callback is undefined, return the value directly…
-		callbackOrResult
-		// …otherwise call the callback. If the result of the callback is thenable, chain a function to it which will
-		// return the value, and return the chain.
-		&& checkThenable(
-			callbackOrResult = callbackOrResult.call(this, value)
-		)
-		// (The truthy check above is safe, as the callback can only be undefined or a function at this point.)
-	) {
-		return callbackOrResult.then(() => value);
-	}
-	return value;
-});
+	apply = build('apply', applyLogic /* , undefined */),
+	applyIf = build('applyIf', applyLogic, true);
