@@ -71,16 +71,20 @@ const applyLogic = function(value, callback, result) {
 	return value;
 };
 /**
- * Calls the passed callback ‒ forwarding the value and routing back whatever is returned ‒ if the passed value is not
- * null-ish. If the passed value is null-ish, behaviour is defined by the third argument. By default (third argument is
- * omitted), a null-ish value is returned directly and the passed callback is skipped.
+ * Calls the passed callback, forwarding the value and routing back whatever is returned.
  */
 export const run = build('run', runLogic /* , undefined */),
+/**
+ * Calls the passed callback ‒ forwarding the value and routing back whatever is returned ‒ if the passed value is not
+ * null-ish. If the passed value is null-ish, it is returned directly and the passed callback is skipped.
+ */
 	runIf = build('runIf', runLogic, true),
 /**
- * Calls the passed callback ‒ forwarding the value and returning it afterwards ‒ if the passed value is not null-ish.
- * If the passed value is null-ish, behaviour is defined by the third argument. By default (third argument is omitted),
- * a null-ish value is returned directly and the passed callback is skipped.
+ * Calls the passed callback, forwarding the value and returning it afterwards.
  */
 	apply = build('apply', applyLogic /* , undefined */),
+/**
+ * Calls the passed callback ‒ forwarding the value and returning it afterwards ‒ if the passed value is not null-ish.
+ * If the passed value is null-ish, it is returned directly and the passed callback is skipped.
+ */
 	applyIf = build('applyIf', applyLogic, true);
