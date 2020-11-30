@@ -95,12 +95,11 @@ expectType<Promise<string> | null>(runIf(aNumeralPromiseOrNull, increment, async
 // runIf with value and a broken callbacks chain.
 expectType<null>(runIf(aNumber, increment, returnNull, convertNumberToString));
 expectType<Promise<null>>(runIf(aNumeralPromise, increment, returnNull, convertNumberToString));
-expectType<Promise<string> | Promise<null>>(runIf(aNumber, increment, asyncReturnNull, convertNumberToString));
-expectType<Promise<string> | Promise<null>>(runIf(aNumeralPromise, increment, asyncReturnNull, convertNumberToString));
+expectType<Promise<null>>(runIf(aNumber, increment, asyncReturnNull, convertNumberToString));
+expectType<Promise<null>>(runIf(aNumeralPromise, increment, asyncReturnNull, convertNumberToString));
 expectType<null>(runIf(aNumberOrNull, increment, returnNull, convertNumberToString));
 expectType<Promise<null>>(runIf(aNumeralOrNullPromise, increment, returnNull, convertNumberToString));
-expectType<Promise<string> | Promise<null> | null>(runIf(aNumberOrNull, increment, asyncReturnNull, convertNumberToString));
-expectType<Promise<string> | Promise<null>>(runIf(aNumeralOrNullPromise, increment, asyncReturnNull, convertNumberToString));
+expectType<Promise<null> | null>(runIf(aNumberOrNull, increment, asyncReturnNull, convertNumberToString));
+expectType<Promise<null>>(runIf(aNumeralOrNullPromise, increment, asyncReturnNull, convertNumberToString));
 expectType<Promise<null> | null>(runIf(aNumeralPromiseOrNull, increment, returnNull, convertNumberToString));
-expectType<Promise<string> | Promise<null> | null>(runIf(aNumeralPromiseOrNull, increment, asyncReturnNull, convertNumberToString));
-// TODO Fix the types, so there is no Promise<string> anywhere in the 10 lines above.
+expectType<Promise<null> | null>(runIf(aNumeralPromiseOrNull, increment, asyncReturnNull, convertNumberToString));
