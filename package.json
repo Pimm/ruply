@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "rollup --config rollup.config.js",
-    "test": "npm run-script build && jest && tsd test/type-test.ts test"
+    "test": "npm run-script build && jest && tsd test"
   },
   "author": "",
   "license": "X11",
