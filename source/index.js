@@ -30,7 +30,7 @@ function build(name, logic, skipIfNullish) {
 		}
 		// Apply the logic, passing the callback if skipIfNullish is not set or the value is not null-ish.
 		result = logic.call(context, value, (skipIfNullish && null == value) ? undefined : callback);
-		// If there are more callbacks (callback other than the one from the line above), recall this function
+		// If there are other callbacks (callbacks other than the one from the line above), recall this function
 		// (recursively) with the new value.
 		if (valueAndCallbacks.length > 2) {
 			// const [_, firstCallback, ...otherCallbacks] = arguments;
@@ -43,14 +43,13 @@ function build(name, logic, skipIfNullish) {
 			return result;
 		}
 	};
-	// Give the resulting function the appropriate name. (Ironically, this would have been a great place to use apply.)
-	Object.defineProperty(implementation, 'name', {
+	// Give the resulting function the appropriate name.
+	return Object.defineProperty(implementation, 'name', {
 		value: name,
 		/* writable: false, */
 		/* enumerable: false, */
 		configurable: true
 	});
-	return implementation;
 }
 const runLogic = function(value, callback) {
 	return callback ? callback.call(this, value) : value;
