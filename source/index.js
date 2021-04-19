@@ -16,30 +16,34 @@ function build(name, logic, skipIfNullish) {
 		}
 		// (Storing the context here explicitly instead of having Babel do it produces slightly shorter code.)
 		const context = this,
-			valueAndCallbacks = arguments;
+			forwardingArguments = arguments;
 		var result;
 		// If the value is thenable, recall this function (recursively) once it resolves.
 		if (checkThenable(value)) {
 			return value.then(value => {
-				// const [_, ...callbacks] = arguments;
+				// const [, ...callbacks] = arguments;
 				// return implementation.call(context, value, ...callbacks);
 				//   ↓
-				valueAndCallbacks[0] = value;
-				return implementation.apply(context, valueAndCallbacks);
+				forwardingArguments[0] = value;
+				return implementation.apply(context, forwardingArguments);
 			});
 		}
-		// Apply the logic, passing the callback if skipIfNullish is not set or the value is not null-ish.
-		result = logic.call(context, value, (skipIfNullish && null == value) ? undefined : callback);
+		// Apply the logic if skipIfNullish is not set or the value is not null-ish. Otherwise skip the logic.
+		if (skipIfNullish && null == value) {
+			result = value;
+		} else /* if (undefined == skipIfNullish || false == skipIfNullish || null != value) */ {
+			result = logic.call(context, value, callback);
+		}
 		// If there are other callbacks (callbacks other than the one from the line above), recall this function
-		// (recursively) with the new value.
-		if (valueAndCallbacks.length > 2) {
-			// const [_, firstCallback, ...otherCallbacks] = arguments;
+		// (recursively) with the result as the new value.
+		if (forwardingArguments.length > 2) {
+			// const [,, ...otherCallbacks] = arguments;
 			// return implementation.call(context, result, ...otherCallbacks);
 			//   ↓
-			splice.call(valueAndCallbacks, 0, 2, result);
-			return implementation.apply(context, valueAndCallbacks);
-		// If there are no more callbacks, return the value.
-		} else /* if (2 == valueAndCallbacks.length) */ {
+			splice.call(forwardingArguments, 0, 2, result);
+			return implementation.apply(context, forwardingArguments);
+		// If there are no more callbacks, return the result.
+		} else /* if (2 == forwardingArguments.length) */ {
 			return result;
 		}
 	};
@@ -51,24 +55,22 @@ function build(name, logic, skipIfNullish) {
 		configurable: true
 	});
 }
-const runLogic = function(value, callback) {
-	return callback ? callback.call(this, value) : value;
-};
-const applyLogic = function(value, callback, result) {
+function runLogic(value, callback) {
+	return callback.call(this, value);
+}
+function applyLogic(value, callback, result) {
 	if (
-		// If the callback is undefined, return the value directly…
-		callback
-		// …otherwise call the callback. If the result of the callback is thenable, chain a function to it which will
-		// return the value, and return the chain.
-		&& checkThenable(
+		// Call the callback. If the result is thenable, chain a function to it which will return the value, and return
+		// that chain.
+		checkThenable(
 			result = callback.call(this, value)
 		)
-		// (The truthy check above is safe, as the callback can only be undefined or a function at this point.)
 	) {
 		return result.then(() => value);
 	}
+	// If the result is not thenable, return the value.
 	return value;
-};
+}
 /**
  * Calls the passed callback, forwarding the value and routing back whatever is returned.
  */
