@@ -6,54 +6,57 @@ const { splice } = [];
  * Builds a ruply function from the passed logic.
  */
 function build(name, logic, skipIfNullish) {
-	function implementation(value, callback) {
-		// Ensure the callback is a function.
-		if ('function' != typeof callback) {
-			// throw new TypeError(`${callback} is not a function`);
-			//   ↓ (We are compiling this code with Babel, and our current configuration compiles the above into something
-			//     overly complex.)
-			throw new TypeError(callback + ' is not a function');
-		}
-		// (Storing the context here explicitly instead of having Babel do it produces slightly shorter code.)
-		const context = this,
-			forwardingArguments = arguments;
-		var result;
-		// If the value is thenable, recall this function (recursively) once it resolves.
-		if (checkThenable(value)) {
-			return value.then(value => {
-				// const [, ...callbacks] = arguments;
-				// return implementation.call(context, value, ...callbacks);
-				//   ↓
-				forwardingArguments[0] = value;
-				return implementation.apply(context, forwardingArguments);
-			});
-		}
-		// Apply the logic if skipIfNullish is not set or the value is not null-ish. Otherwise skip the logic.
-		if (skipIfNullish && null == value) {
-			result = value;
-		} else /* if (undefined == skipIfNullish || false == skipIfNullish || null != value) */ {
-			result = logic.call(context, value, callback);
-		}
-		// If there are other callbacks (callbacks other than the one from the line above), recall this function
-		// (recursively) with the result as the new value.
-		if (forwardingArguments.length > 2) {
-			// const [,, ...otherCallbacks] = arguments;
-			// return implementation.call(context, result, ...otherCallbacks);
-			//   ↓
-			splice.call(forwardingArguments, 0, 2, result);
-			return implementation.apply(context, forwardingArguments);
-		// If there are no more callbacks, return the result.
-		} else /* if (2 == forwardingArguments.length) */ {
-			return result;
-		}
-	};
 	// Give the resulting function the appropriate name.
-	return Object.defineProperty(implementation, 'name', {
-		value: name,
-		/* writable: false, */
-		/* enumerable: false, */
-		configurable: true
-	});
+	return Object.defineProperty(
+		function implementation(value, callback) {
+			// Ensure the callback is a function.
+			if ('function' != typeof callback) {
+				// throw new TypeError(`${callback} is not a function`);
+				//   ↓ (We are compiling this code with Babel, and our current configuration compiles the above into something
+				//     overly complex.)
+				throw new TypeError(callback + ' is not a function');
+			}
+			// (Storing the context here explicitly instead of having Babel do it produces slightly shorter code.)
+			const context = this,
+				forwardingArguments = arguments;
+			var result;
+			// If the value is thenable, recall this function (recursively) once it resolves.
+			if (checkThenable(value)) {
+				return value.then(value => {
+					// const [, ...callbacks] = arguments;
+					// return implementation.call(context, value, ...callbacks);
+					//   ↓
+					forwardingArguments[0] = value;
+					return implementation.apply(context, forwardingArguments);
+				});
+			}
+			// Apply the logic if skipIfNullish is not set or the value is not null-ish. Otherwise skip the logic.
+			if (skipIfNullish && null == value) {
+				result = value;
+			} else /* if (undefined == skipIfNullish || false == skipIfNullish || null != value) */ {
+				result = logic.call(context, value, callback);
+			}
+			// If there are other callbacks (callbacks other than the one from the line above), recall this function
+			// (recursively) with the result as the new value.
+			if (forwardingArguments.length > 2) {
+				// const [,, ...otherCallbacks] = arguments;
+				// return implementation.call(context, result, ...otherCallbacks);
+				//   ↓
+				splice.call(forwardingArguments, 0, 2, result);
+				return implementation.apply(context, forwardingArguments);
+			// If there are no more callbacks, return the result.
+			} else /* if (2 == forwardingArguments.length) */ {
+				return result;
+			}
+		},
+		'name',
+		{
+			value: name,
+			/* writable: false, */
+			/* enumerable: false, */
+			configurable: true
+		}
+	);
 }
 function runLogic(value, callback) {
 	return callback.call(this, value);
