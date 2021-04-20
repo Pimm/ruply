@@ -15,55 +15,55 @@ function createNullReturningCallback() {
 test('chains', () => {
 	expect.assertions(24);
 	// run(If) with a complete chain.
-	run([createIncrement(), createIncrement(), createIncrement()], ([increment1, increment2, increment3]) => {
+	run([createIncrement(), createIncrement(), createIncrement()], callbacks => {
 		expect(
-			run(5, increment1, increment2, increment3)
+			run(5, ...callbacks)
 		).toBe(8);
-		expect(increment1).toBeCalledWith(5);
-		expect(increment2).toBeCalledWith(6);
-		expect(increment3).toBeCalledWith(7);
+		expect(callbacks[0]).toBeCalledWith(5);
+		expect(callbacks[1]).toBeCalledWith(6);
+		expect(callbacks[2]).toBeCalledWith(7);
 	});
-	run([createIncrement(), createIncrement(), createIncrement()], ([increment1, increment2, increment3]) => {
+	run([createIncrement(), createIncrement(), createIncrement()], callbacks => {
 		expect(
-			runIf(5, increment1, increment2, increment3)
+			runIf(5, ...callbacks)
 		).toBe(8);
-		expect(increment1).toBeCalledWith(5);
-		expect(increment2).toBeCalledWith(6);
-		expect(increment3).toBeCalledWith(7);
+		expect(callbacks[0]).toBeCalledWith(5);
+		expect(callbacks[1]).toBeCalledWith(6);
+		expect(callbacks[2]).toBeCalledWith(7);
 	});
 	// apply with a complete chain.
-	run([createIncrement(), createIncrement(), createIncrement()], ([increment1, increment2, increment3]) => {
+	run([createIncrement(), createIncrement(), createIncrement()], callbacks => {
 		expect(
-			apply(5, increment1, increment2, increment3)
+			apply(5, ...callbacks)
 		).toBe(5);
-		expect(increment1).toBeCalledWith(5);
-		expect(increment2).toBeCalledWith(5);
-		expect(increment3).toBeCalledWith(5);
+		expect(callbacks[0]).toBeCalledWith(5);
+		expect(callbacks[1]).toBeCalledWith(5);
+		expect(callbacks[2]).toBeCalledWith(5);
 	});
 	// run(If) with a broken chain.
-	run([createIncrement(), createNullReturningCallback(), createIncrement()], ([increment1, returnNull, increment2]) => {
+	run([createIncrement(), createNullReturningCallback(), createIncrement()], callbacks => {
 		expect(
-			run(5, increment1, returnNull, increment2)
+			run(5, ...callbacks)
 		).toBe(1);
-		expect(increment1).toBeCalledWith(5);
-		expect(returnNull).toBeCalledWith(6);
-		expect(increment2).toBeCalledWith(null);
+		expect(callbacks[0]).toBeCalledWith(5);
+		expect(callbacks[1]).toBeCalledWith(6);
+		expect(callbacks[2]).toBeCalledWith(null);
 	});
-	run([createIncrement(), createNullReturningCallback(), createIncrement()], ([increment1, returnNull, increment2]) => {
+	run([createIncrement(), createNullReturningCallback(), createIncrement()], callbacks => {
 		expect(
-			runIf(5, increment1, returnNull, increment2)
+			runIf(5, ...callbacks)
 		).toBe(null);
-		expect(increment1).toBeCalledWith(5);
-		expect(returnNull).toBeCalledWith(6);
-		expect(increment2).not.toBeCalled();
+		expect(callbacks[0]).toBeCalledWith(5);
+		expect(callbacks[1]).toBeCalledWith(6);
+		expect(callbacks[2]).not.toBeCalled();
 	});
 	// apply with a broken chain.
-	run([createIncrement(), createNullReturningCallback(), createIncrement()], ([increment1, returnNull, increment2]) => {
+	run([createIncrement(), createNullReturningCallback(), createIncrement()], callbacks => {
 		expect(
-			apply(5, increment1, returnNull, increment2)
+			apply(5, ...callbacks)
 		).toBe(5);
-		expect(increment1).toBeCalledWith(5);
-		expect(returnNull).toBeCalledWith(5);
-		expect(increment2).toBeCalledWith(5);
+		expect(callbacks[0]).toBeCalledWith(5);
+		expect(callbacks[1]).toBeCalledWith(5);
+		expect(callbacks[2]).toBeCalledWith(5);
 	});
 });
