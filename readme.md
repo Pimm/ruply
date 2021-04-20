@@ -1,90 +1,146 @@
-`run` and `apply` are two functions that can help you craft easy-to-read code.
+`run[If]` and `apply` are functions that can help you craft easy-to-read code.
 
-You can think of `run` and `apply` as cousins of `.then(…)` in promises, in that they help you encapsulate logic in short functions. Because of its behaviour, `run` is roughly the counterpart of the `??` operator.
+You can think of `run[If]` and `apply` as cousins of [`.then(…)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise), in that they help you encapsulate logic in short functions.
 
 # `run`
 
 `run` forwards the value to your callback, and returns the result.
 
-Take this snippet for example:
 ```javascript
 const area = run(
 	getSize(),
 	({ width, height }) => width * height
 );
 ```
-`run` forwards the size object into the callback, and routes back the area returned by it. It is obvious from reading these lines that `width` and `height` are used only to calculate the area, more so than in the alternative:
+`run` forwards the size object into the callback, and routes back the area. You can tell the area is the only thing of interest: `width` and `height` are confined to the callback. In the alternative, `width` and `height` overstay their welcome:
 ```javascript
 const { width, height } = getSize();
 const area = width * height;
-```
-
-But `run` has an extra characteristic which makes it a lot more powerful: it skips the callback if the value is null-ish.
-
-Take a look at this:
-```javascript
-const date = run(
-	response.data.timestamp,
-	timestamp => new Date(timestamp)
-);
-```
-`run` forwards the timestamp in `response.data` into the callback only if it is not `undefined` (or `null`). If the timestamp is missing, parsing is skipped. Alternatives include this:
-```javascript
-let date = response.data.timestamp;
-if (date != undefined) {
-	date = new Date(date);
-}
-```
-And this dangerous[1] one:
-```javascript
-const date = response.data.timestamp
-	&& new Date(response.data.timestamp);
 ```
 
 # `apply`
 
 `apply` forwards the value to your callback ‒ just like `run` does ‒ but returns the value itself.
 
-Take this snippet:
 ```javascript
 return apply(
 	document.createElement('div')
 	element => element.id = 'container'
 );
 ```
-The alternative adds noise between `return` and `document.createElement(…)`:
+`apply` forwards the newly created container into the callback, and then returns that container. The alternative moves `return` to the bottom, further away from `document.createElement(…)`:
 ```javascript
 const container = document.createElement('div');
 container.id = 'container';
 return container;
 ```
 
-Like `run`, `apply` skips the callback if the value is null-ish.
+# `runIf`
+
+_ruply_ is especially powerful when dealing with `null` and `undefined` using the `runIf` variant.
+
+```javascript
+const timestamp = runIf(
+	response.data.timestamp,
+	Date.parse
+);
+```
+`runIf` forwards the timestamp in `response.data` into the callback _only_ if it is not `undefined` (or `null`). If the timestamp is missing, the parsing is skipped. Alternatives include this:
+```javascript
+let { timestamp } = response.data;
+if (timestamp != undefined) {
+	timestamp = Date.parse(timestamp);
+}
+```
+And this<sup>*</sup>:
+```javascript
+let timestamp = Date.parse(response.data.timestamp);
+if (isNaN(timestamp)) {
+	timestamp = undefined;
+}
+```
+And this dangerous<sup>**</sup> one:
+```javascript
+const timestamp = response.data.timestamp
+	&& Date.parse(response.data.timestamp);
+```
+
+\* In the alternative with `isNaN`, invalid timestamps (such as `'invalid'`) are indistinguishable from missing timestamps. This is likely unexpected behaviour.
+
+\** In the alternative with the `&&` operator, `Date.parse` is skipped not only if the timestamp is `undefined` but also if it is `''` (or any other falsy value). This too is likely unexpected.
 
 # Under the hood
 
-This is a simplified implementation of `run` and `apply` (without promise support):
+These are simplified implementations of `run[If]` and `apply` (without support for promises or multiple callbacks):
 
 ```javascript
 function run(value, callback) {
+	return callback(value);
+}
+
+function runIf(value, callback) {
 	return value != null ? callback(value) : value;
 }
 
 function apply(value, callback) {
-	return value != null && callback(value), value;
+	callback(value);
+	return value;
 }
 ```
 
 # More examples
 
-## Side effect in return statement
+## Local destructure
+
+```javascript
+const emailApi = new EmailApi(
+	configuration.email.clientID,
+	configuration.email.clientSecret,
+	configuration.email.sender
+);
+```
+A few properties are read from `configuration.email`.
+
+`run` allows those properties to be destructured, without polluting the scope.
+```javascript
+const emailApi = run(
+	configuration.email,
+	({ clientID, clientSecret, sender }) =>
+		new EmailApi(clientID, clientSecret, sender)
+);
+```
+
+## Encapsulated logic
+
+```javascript
+logger.log(`Received ${bundles.reduce(
+	(total, { messages }) => total + messages.length, 0
+)} message(s) in ${bundles.length} bundle(s)`);
+```
+The message count is calculated from `bundles`.
+
+`run` moves the summing logic out of the template literal.
+```javascript
+run(
+	bundles.reduce(
+		(total, { messages }) => total + messages.length, 0
+	),
+	messageCount =>
+		logger.log(`Received ${messageCount} message(s) `
+			+ `in ${bundles.length} bundle(s)`)
+);
+```
+
+## Return statement with side effect
 
 ```javascript
 const id = sendMessage(body);
 logger.log(`Message #${id} sent`);
 return id;
 ```
-`apply` groups `return` and `sendMessage(…)` closer together, and better reflects that logging is a side effect:
+A message is logged after `sendMessage` is called.
+
+`apply` puts `return` and `sendMessage(…)` closer together.
 ```javascript
 return apply(
 	sendMessage(body),
@@ -92,101 +148,62 @@ return apply(
 );
 ```
 
-## Check in return statement
+## Timed asynchronous function
 
 ```javascript
-const index = array.indexOf(value);
-if (index == -1) {
-	throw new Error(`Illegal state: ${value} not found`);
-}
-return index;
+console.time('query-database');
+const result = await queryDatabase();
+console.timeEnd('query-database');
+return result;
 ```
-`apply` shifts the reader's focus away from the if block:
+The asynchronous `queryDatabase` function is timed.
+
+`apply` removes the need for the short-lived variable.
 ```javascript
+console.time('query-database');
 return apply(
-	array.indexOf(value),
-	index => {
-		if (index == -1) {
-			throw new Error(`Illegal state: ${value} not found`);
-		}
-	}
-)
+	queryDatabase(),
+	() => console.timeEnd('query-database')
+);
+```
+The `await` keyword is optional, as `apply` is promise-aware.
+
+## Optional chain
+```javascript
+const token =
+	request.headers.authorization != undefined
+		? /^Bearer\s+(.*)$/.exec(
+			request.headers.authorization
+		)?.[1]
+		: undefined;
+```
+The header can be missing, and the `exec` can return `null`.
+
+`runIf` cuts out the `undefined` check as well as the `?.` operator.
+```javascript
+const token = runIf(
+	request.headers.authorization,
+	headerValue => /^Bearer\s+(.*)$/.exec(headerValue),
+	([, token]) => token
+);
 ```
 
-## Extra step if promise does not resolve to `null`
+## Optional step
 
 ```javascript
-const value = await this.cache.get(key);
+const value = await cache.get(key);
 if (value == null || value.expiration < Date.now()) {
 	return null;
 }
 return value;
 ```
-The above snippet returns (a promise which resolves to) `null` if either the value doesn't exist in the cache or said value expired. `run` cuts out the `null` check:
+The asynchronous `cache.get` function returns `null` if there is no cached value. A check is performed to ensure no expired values are returned.
+
+`runIf` cuts out the `null` check.
 ```javascript
-return run(
-	this.cache.get(key),
+return runIf(
+	cache.get(key),
 	value => value.expiration < Date.now() ? null : value
 );
 ```
-There is no need for the `await` keyword, since `run` is promise-aware.
-
-## Side effect when a promise resolves
-
-```javascript
-startTimer('query-database');
-const result = await queryDatabase();
-stopTimer('query-database');
-return result;
-```
-This snippet starts a timer before calling `queryDatabase`, and stops it when the returned promise resolves. `apply` flows the result implicitly:
-```javascript
-startTimer('query-database');
-return apply(
-	queryDatabase(),
-	() => stopTimer('query-database')
-);
-```
-The `await` keyword is optional, as `apply` is promise-aware.
-
-## Initialisation block
-
-```javascript
-const buffer = Buffer.allocUnsafe(size);
-Array.from(buffer.keys(), i => buffer[i] = i);
-return buffer;
-```
-`apply` eliminates the `buffer` variable, which is only used during initialisation:
-```javascript
-return apply(
-	Buffer.allocUnsafe(size),
-	buffer => Array.from(buffer.keys(), i => buffer[i] = i)
-);
-```
-
-## Logic for optional argument
-
-```javascript
-if (options?.limit != undefined) {
-	query.add('limit', options.limit);
-}
-```
-`apply` removes the repetition of "`options.`":
-```javascript
-apply(
-	options?.limit,
-	limit => query.add('limit', limit)
-);
-```
-
-## Swapping two variables
-
-```javascript
-const temp = a;
-a = b;
-b = temp;
-```
-If you really wanted to, you could do this with `apply` (assuming `a` is not a promise nor null-ish):
-```javascript
-b = apply(a, () => a = b);
-```
+There is no need for the `await` keyword, since `runIf` is promise-aware.
