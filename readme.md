@@ -69,6 +69,19 @@ const timestamp = response.data.timestamp
 
 \** In the alternative with the `&&` operator, `Date.parse` is skipped not only if the timestamp is `undefined` but also if it is `''` (or any other falsy value). This too is likely unexpected.
 
+### `runIf` and `??`
+
+You can think of `runIf` as the opposite of the `??` operator.
+
+```javascript
+console.log(a ?? b ?? c);
+```
+This logs `a`, unless `a` is null-ish in which case it logs `b`, unless `b` is also null-ish in which case it logs `c`. In other words: it logs the leftmost value that is not null-ish.
+```javascript
+console.log(runIf(a, () => b, () => c));
+```
+This logs `c`, unless `b` is null-ish in which case it logs `b`, unless `a` is also null-ish in which case it logs `a`. In other words: it logs the leftmost value that is null-ish.
+
 # Under the hood
 
 These are simplified implementations of `run[If]` and `apply` (without support for promises or multiple callbacks):
