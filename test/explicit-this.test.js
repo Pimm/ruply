@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { run, runIf, apply, applyIf } from '..';
+import { run, runIf, apply } from '..';
 
 function pause() {
 	return new Promise(resolve => void setTimeout(resolve, 10));
@@ -13,7 +13,7 @@ function resolveShortly(value) {
 }
 
 test('explicit-this', () => {
-	expect.assertions(16);
+	expect.assertions(12);
 	// run(If).
 	(() => {
 		var context;
@@ -35,21 +35,11 @@ test('explicit-this', () => {
 		).toBe('result');
 		expect(context).toBe('context');
 	})();
-	// apply(If).
+	// apply.
 	(() => {
 		var context;
 		expect(
 			apply.call('context', 'value', function() {
-				context = this;
-				return 'result';
-			})
-		).toBe('value');
-		expect(context).toBe('context');
-	})();
-	(() => {
-		var context;
-		expect(
-			applyIf.call('context', 'value', function() {
 				context = this;
 				return 'result';
 			})
@@ -78,21 +68,11 @@ test('explicit-this', () => {
 			).resolves.toBe('result')
 			.then(() => expect(context).toBe('context'));
 		})(),
-		// apply(If) with promise.
+		// apply with promise.
 		(() => {
 			var context;
 			return expect(
 				apply.call('context', resolveShortly('value'), function() {
-					context = this;
-					return 'result';
-				})
-			).resolves.toBe('value')
-			.then(() => expect(context).toBe('context'));
-		})(),
-		(() => {
-			var context;
-			return expect(
-				applyIf.call('context', resolveShortly('value'), function() {
 					context = this;
 					return 'result';
 				})

@@ -2,14 +2,13 @@
  * @jest-environment node
  */
 
-import { run, runIf, apply, applyIf } from '..';
+import { run, runIf, apply } from '..';
 
 test('properties', () => {
 	new Map([
 		['run', run],
 		['runIf', runIf],
-		['apply', apply],
-		['applyIf', applyIf]
+		['apply', apply]
 	])
 	.forEach((implementation, name) => {
 		expect(implementation.name).toBe(name);

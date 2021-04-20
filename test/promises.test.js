@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { run, runIf, apply, applyIf } from '..';
+import { run, runIf, apply } from '..';
 
 function pause() {
 	return new Promise(resolve => void setTimeout(resolve, 10));
@@ -21,7 +21,7 @@ function resolveShortly(value) {
 }
 
 test('async-callback', () => {
-	expect.assertions(16);
+	expect.assertions(12);
 	return Promise.all([
 		// run(If) with non-null-ish argument.
 		run(createAsyncCallback(), callback => {
@@ -36,16 +36,10 @@ test('async-callback', () => {
 			).resolves.toBe('result')
 			.then(() => expect(callback).toBeCalledWith('value'));
 		}),
-		// apply(If) with non-null-ish argument.
+		// apply with non-null-ish argument.
 		run(createAsyncCallback(), callback => {
 			return expect(
 				apply('value', callback)
-			).resolves.toBe('value')
-			.then(() => expect(callback).toBeCalledWith('value'));
-		}),
-		run(createAsyncCallback(), callback => {
-			return expect(
-				applyIf('value', callback)
 			).resolves.toBe('value')
 			.then(() => expect(callback).toBeCalledWith('value'));
 		}),
@@ -62,24 +56,18 @@ test('async-callback', () => {
 			).toBe(null);
 			expect(callback).not.toBeCalled();
 		}),
-		// apply(If) with null argument.
+		// apply with null argument.
 		run(createAsyncCallback(), callback => {
 			return expect(
 				apply(null, callback)
 			).resolves.toBe(null)
 			.then(() => expect(callback).toBeCalledWith(null));
-		}),
-		run(createAsyncCallback(), callback => {
-			expect(
-				applyIf(null, callback)
-			).toBe(null);
-			expect(callback).not.toBeCalled();
 		})
 	]);
 });
 
 test('promise-value', () => {
-	expect.assertions(18);
+	expect.assertions(13);
 	return Promise.all([
 		// run(If) with promise which resolves to non-null-ish value.
 		run(createCallback(), callback => {
@@ -94,21 +82,13 @@ test('promise-value', () => {
 			).resolves.toBe('result')
 			.then(() => expect(callback).toBeCalledWith('value'));
 		}),
-		// apply(If) with promise which resolves to non-null-ish value.
+		// apply with promise which resolves to non-null-ish value.
 		run(createCallback(), callback => {
 			const startTime = Date.now();
 			return expect(
 				apply(resolveShortly('value'), callback)
 			).resolves.toBe('value')
 			// The returned promise should not be resolved until the one returned by the callback has.
-			.then(() => expect(Date.now() - startTime).toBeGreaterThanOrEqual(10))
-			.then(() => expect(callback).toBeCalledWith('value'));
-		}),
-		run(createCallback(), callback => {
-			const startTime = Date.now();
-			return expect(
-				applyIf(resolveShortly('value'), callback)
-			).resolves.toBe('value')
 			.then(() => expect(Date.now() - startTime).toBeGreaterThanOrEqual(10))
 			.then(() => expect(callback).toBeCalledWith('value'));
 		}),
@@ -125,24 +105,18 @@ test('promise-value', () => {
 			).resolves.toBe(null)
 			.then(() => expect(callback).not.toBeCalled());
 		}),
-		// apply(If) with promise which resolves to null.
+		// apply with promise which resolves to null.
 		run(createCallback(), callback => {
 			return expect(
 				apply(resolveShortly(null), callback)
 			).resolves.toBe(null)
 			.then(() => expect(callback).toBeCalledWith(null));
-		}),
-		run(createCallback(), callback => {
-			return expect(
-				applyIf(resolveShortly(null), callback)
-			).resolves.toBe(null)
-			.then(() => expect(callback).not.toBeCalled());
 		})
 	]);
 });
 
 test('promise-value-async-callback', () => {
-	expect.assertions(18);
+	expect.assertions(13);
 	return Promise.all([
 		// run(If) with promise which resolves to non-null-ish value.
 		run(createAsyncCallback(), callback => {
@@ -157,20 +131,11 @@ test('promise-value-async-callback', () => {
 			).resolves.toBe('result')
 			.then(() => expect(callback).toBeCalledWith('value'));
 		}),
-		// apply(If) with promise which resolves to non-null-ish value.
+		// apply with promise which resolves to non-null-ish value.
 		run(createAsyncCallback(), callback => {
 			const startTime = Date.now();
 			return expect(
 				apply(resolveShortly('value'), callback)
-			).resolves.toBe('value')
-			// The returned promise should not be resolved until the one returned by the callback has.
-			.then(() => expect(Date.now() - startTime).toBeGreaterThanOrEqual(20))
-			.then(() => expect(callback).toBeCalledWith('value'));
-		}),
-		run(createAsyncCallback(), callback => {
-			const startTime = Date.now();
-			return expect(
-				applyIf(resolveShortly('value'), callback)
 			).resolves.toBe('value')
 			// The returned promise should not be resolved until the one returned by the callback has.
 			.then(() => expect(Date.now() - startTime).toBeGreaterThanOrEqual(20))
@@ -189,18 +154,12 @@ test('promise-value-async-callback', () => {
 			).resolves.toBe(null)
 			.then(() => expect(callback).not.toBeCalled());
 		}),
-		// apply(If) with promise which resolves to null.
+		// apply with promise which resolves to null.
 		run(createAsyncCallback(), callback => {
 			return expect(
 				apply(resolveShortly(null), callback)
 			).resolves.toBe(null)
 			.then(() => expect(callback).toBeCalledWith(null));
-		}),
-		run(createAsyncCallback(), callback => {
-			return expect(
-				applyIf(resolveShortly(null), callback)
-			).resolves.toBe(null)
-			.then(() => expect(callback).not.toBeCalled());
 		})
 	]);
 });
