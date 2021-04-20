@@ -65,9 +65,9 @@ const timestamp = response.data.timestamp
 	&& Date.parse(response.data.timestamp);
 ```
 
-\* In the alternative with `isNaN`, invalid timestamps (such as `'invalid'`) are indistinguishable from missing timestamps. This is likely unexpected behaviour.
+[*] In the alternative with `isNaN`, invalid timestamps (such as `'invalid'`) are indistinguishable from missing timestamps. This is likely unexpected behaviour.
 
-\** In the alternative with the `&&` operator, `Date.parse` is skipped not only if the timestamp is `undefined` but also if it is `''` (or any other falsy value). This too is likely unexpected.
+[**] In the alternative with the `&&` operator, `Date.parse` is skipped not only if the timestamp is `undefined` but also if it is `''` (or any other falsy value). This too is likely unexpected.
 
 ### `runIf` and `??`
 
@@ -100,6 +100,16 @@ function apply(value, callback) {
 	return value;
 }
 ```
+
+# Rationale
+
+These functions are designed to help your code better convey your intentions to the reader.
+
+Non-goals include:
+1. producing the shortest possible code, and
+2. producing clever code.
+
+Use `run[If]` and `apply` in situations where you feel it helps the reader of your code.
 
 # More examples
 
@@ -190,7 +200,7 @@ const token =
 		)?.[1]
 		: undefined;
 ```
-The header can be missing, and the `exec` can return `null`.
+The header can be missing, and the regular expression can produce `null`.
 
 `runIf` cuts out the `undefined` check as well as the `?.` operator.
 ```javascript
