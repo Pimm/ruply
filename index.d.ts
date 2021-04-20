@@ -39,18 +39,8 @@ declare function apply<T, A, R, C>(this: C, value: T, ...callbacks: [(this: C, v
 	IfPromise<A & R, Promisify<T>, T>;
 declare function apply<T, A, B, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => A, (this: C, value: Resolve<T>) => B, (this: C, value: Resolve<T>) => R]):
 	IfPromise<A & B & R, Promisify<T>, T>;
-/**
- * Calls the passed callback ‒ forwarding the value and returning it afterwards ‒ if the passed value is not null-ish.
- * If the passed value is null-ish, it is returned directly and the passed callback is skipped.
- */
-declare function applyIf<T, R, C>(this: C, value: T, callback: (this: C, value: Exclude<Resolve<T>, Nullish>) => R):
-	Extract<T, Nullish> | IfPromise<R, Promisify<Exclude<T, Nullish>>, Exclude<T, Nullish>>;
-declare function applyIf<T, A, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => A, (this: C, value: Exclude<Resolve<T>, Nullish>) => R]):
-	Extract<T, Nullish> | IfPromise<A & R, Promisify<Exclude<T, Nullish>>, Exclude<T, Nullish>>;
-declare function applyIf<T, A, B, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => A, (this: C, value: Exclude<Resolve<T>, Nullish>) => B, (this: C, value: Exclude<Resolve<T>, Nullish>) => R]):
-	Extract<T, Nullish> | IfPromise<A & B & R, Promisify<Exclude<T, Nullish>>, Exclude<T, Nullish>>;
 
 export {
 	run, runIf,
-	apply, applyIf
+	apply
 };

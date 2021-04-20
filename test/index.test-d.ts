@@ -1,5 +1,5 @@
 import { expectType } from 'tsd';
-import { run, runIf, apply, applyIf } from '..';
+import { run, runIf, apply } from '..';
 
 const aNumber: number = 1;
 const aNumeralPromise = Promise.resolve(1);
@@ -29,35 +29,11 @@ expectType<number>(apply(aNumber, convertNumberToString));
 expectType<Promise<number>>(apply(aNumeralPromise, convertNumberToString));
 expectType<Promise<number>>(apply(aNumber, asyncConvertNumberToString));
 expectType<Promise<number>>(apply(aNumeralPromise, asyncConvertNumberToString));
-// applyIf with potential non-null-ish value and one callback.
-expectType<number>(applyIf(aNumber, convertNumberToString));
-expectType<Promise<number>>(applyIf(aNumeralPromise, convertNumberToString));
-expectType<Promise<number>>(applyIf(aNumber, asyncConvertNumberToString));
-expectType<Promise<number>>(applyIf(aNumeralPromise, asyncConvertNumberToString));
-// applyIf with potential null-ish value and one callback.
-expectType<number | null>(applyIf(aNumberOrNull, convertNumberToString));
-expectType<Promise<number | null>>(applyIf(aNumeralOrNullPromise, convertNumberToString));
-expectType<Promise<number> | null>(applyIf(aNumberOrNull, asyncConvertNumberToString));
-expectType<Promise<number | null>>(applyIf(aNumeralOrNullPromise, asyncConvertNumberToString));
-expectType<Promise<number> | null>(applyIf(aNumeralPromiseOrNull, convertNumberToString));
-expectType<Promise<number> | null>(applyIf(aNumeralPromiseOrNull, asyncConvertNumberToString));
 // apply with multiple callbacks.
 expectType<number>(apply(aNumber, increment, increment, increment));
 expectType<Promise<number>>(apply(aNumeralPromise, increment, increment, increment));
 expectType<Promise<number>>(apply(aNumber, increment, asyncIncrement, increment));
 expectType<Promise<number>>(apply(aNumeralPromise, increment, asyncIncrement, increment));
-// applyIf with non-null-ish value and multiple callbacks.
-expectType<number>(applyIf(aNumber, increment, increment, increment));
-expectType<Promise<number>>(applyIf(aNumeralPromise, increment, increment, increment));
-expectType<Promise<number>>(applyIf(aNumber, increment, asyncIncrement, increment));
-expectType<Promise<number>>(applyIf(aNumeralPromise, increment, asyncIncrement, increment));
-// applyIf with potential null-ish value and multiple callbacks.
-expectType<number | null>(applyIf(aNumberOrNull, increment, increment, increment));
-expectType<Promise<number | null>>(applyIf(aNumeralOrNullPromise, increment, increment, increment));
-expectType<Promise<number> | null>(applyIf(aNumberOrNull, increment, asyncIncrement, increment));
-expectType<Promise<number | null>>(applyIf(aNumeralOrNullPromise, increment, asyncIncrement, increment));
-expectType<Promise<number> | null>(applyIf(aNumeralPromiseOrNull, increment, increment, increment));
-expectType<Promise<number> | null>(applyIf(aNumeralPromiseOrNull, increment, asyncIncrement, increment));
 // run with one callback.
 expectType<string>(run(aNumber, convertNumberToString));
 expectType<Promise<string>>(run(aNumeralPromise, convertNumberToString));

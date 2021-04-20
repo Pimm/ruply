@@ -5,7 +5,7 @@ const { splice } = [];
 /**
  * Builds a ruply function from the passed logic.
  */
-function build(name, logic, skipIfNullish) {
+function build(name, logic) {
 	// Give the resulting function the appropriate name.
 	return Object.defineProperty(
 		function implementation(value, callback) {
@@ -30,12 +30,8 @@ function build(name, logic, skipIfNullish) {
 					return implementation.apply(context, forwardingArguments);
 				});
 			}
-			// Apply the logic if skipIfNullish is not set or the value is not null-ish. Otherwise skip the logic.
-			if (skipIfNullish && null == value) {
-				result = value;
-			} else /* if (undefined == skipIfNullish || false == skipIfNullish || null != value) */ {
-				result = logic.call(context, value, callback);
-			}
+			// Apply the logic.
+			result = logic.call(context, value, callback);
 			// If there are other callbacks (callbacks other than the one from the line above), recall this function
 			// (recursively) with the result as the new value.
 			if (forwardingArguments.length > 2) {
@@ -58,37 +54,44 @@ function build(name, logic, skipIfNullish) {
 		}
 	);
 }
-function runLogic(value, callback) {
-	return callback.call(this, value);
-}
-function applyLogic(value, callback, result) {
-	if (
-		// Call the callback. If the result is thenable, chain a function to it which will return the value, and return
-		// that chain.
-		checkThenable(
-			result = callback.call(this, value)
-		)
-	) {
-		return result.then(() => value);
-	}
-	// If the result is not thenable, return the value.
-	return value;
-}
 /**
  * Calls the passed callback, forwarding the value and routing back whatever is returned.
  */
-export const run = build('run', runLogic /* , undefined */),
+export const run =
+	build(
+		'run',
+		function runLogic(value, callback) {
+			return callback.call(this, value);
+		}
+	),
 /**
  * Calls the passed callback ‒ forwarding the value and routing back whatever is returned ‒ if the passed value is not
  * null-ish. If the passed value is null-ish, it is returned directly and the passed callback is skipped.
  */
-	runIf = build('runIf', runLogic, true),
+	runIf =
+	build(
+		'runIf',
+		function runIfLogic(value, callback) {
+			return null != value ? callback.call(this, value) : value;
+		}
+	),
 /**
  * Calls the passed callback, forwarding the value and returning it afterwards.
  */
-	apply = build('apply', applyLogic /* , undefined */),
-/**
- * Calls the passed callback ‒ forwarding the value and returning it afterwards ‒ if the passed value is not null-ish.
- * If the passed value is null-ish, it is returned directly and the passed callback is skipped.
- */
-	applyIf = build('applyIf', applyLogic, true);
+	apply =
+	build(
+		'apply',
+		function applyLogic(value, callback, result) {
+			if (
+				// Call the callback. If the result is thenable, chain a function to it which will return the value, and return
+				// that chain.
+				checkThenable(
+					result = callback.call(this, value)
+				)
+			) {
+				return result.then(() => value);
+			}
+			// If the result is not thenable, return the value.
+			return value;
+		}
+	);

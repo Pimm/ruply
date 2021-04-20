@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { runIf, apply, applyIf } from '..';
+import { runIf, apply } from '..';
 
 test('nullish', () => {
 	apply(
@@ -18,22 +18,16 @@ test('nullish', () => {
 			[{}, false],
 			[() => {}, false]
 		]),
-		map => expect.assertions(map.size * 2)
+		map => expect.assertions(map.size)
 	)
 	.forEach((nullish, value) => {
-		var runExpectancy = expect(apply(
+		var expectancy = expect(apply(
 			jest.fn(),
 			callback => runIf(value, callback)
 		));
-		var applyExpectancy = expect(apply(
-			jest.fn(),
-			callback => applyIf(value, callback)
-		));
 		if (nullish) {
-			runExpectancy = runExpectancy.not;
-			applyExpectancy = applyExpectancy.not;
+			expectancy = expectancy.not;
 		}
-		runExpectancy.toBeCalled();
-		applyExpectancy.toBeCalled();
+		expectancy.toBeCalled();
 	});
 });
