@@ -1,19 +1,19 @@
 `run[If]` and `apply` are functions that can help you craft easy-to-read code.
 
-You can think of `run[If]` and `apply` as cousins of [`.then(…)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise), in that they help you encapsulate logic in short functions.
-
 # `run`
 
 `run` forwards the value to your callback, and returns the result.
 
 ```javascript
+// Calculate the area.
 const area = run(
 	getSize(),
 	({ width, height }) => width * height
 );
 ```
-`run` forwards the size object into the callback, and routes back the area. You can tell the area is the only thing of interest: `width` and `height` are confined to the callback. In the alternative, `width` and `height` overstay their welcome:
+`width` and `height` are neatly confined to the callback. The alternative without `run` has those variables overstay their welcome:
 ```javascript
+// Calculate the area.
 const { width, height } = getSize();
 const area = width * height;
 ```
@@ -23,30 +23,36 @@ const area = width * height;
 `apply` forwards the value to your callback ‒ just like `run` does ‒ but returns the value itself.
 
 ```javascript
-return apply(
-	document.createElement('div')
-	element => element.id = 'container'
-);
+// Remove the item from the selection.
+setState(previousSelection => apply(
+	new Set(previousSelection),
+	selection => selection.delete(item)
+));
 ```
-`apply` forwards the newly created container into the callback, and then returns that container. The alternative moves `return` to the bottom, further away from `document.createElement(…)`:
+The alternative without `apply` uses the `return` keyword and is more wordy:
 ```javascript
-const container = document.createElement('div');
-container.id = 'container';
-return container;
+// Remove the item from the selection.
+setState(previousSelection => {
+	const selection = new Set(previousSelection);
+	selection.delete(item);
+	return selection;
+});
 ```
 
 # `runIf`
 
-_ruply_ is especially powerful when dealing with `null` and `undefined` using the `runIf` variant.
+`runIf` skips the callback if the value is [nullish](https://developer.mozilla.org/docs/Glossary/Nullish), and behaves the same as `run` otherwise. `runIf` is to `run` as the `?.` operator is to the `.` operator.
 
 ```javascript
+// Parse the timestamp (if any).
 const timestamp = runIf(
 	response.data.timestamp,
 	Date.parse
 );
 ```
-`runIf` forwards the timestamp in `response.data` into the callback _only_ if it is not `undefined` (or `null`). If the timestamp is missing, the parsing is skipped. Alternatives include this:
+Alternatives include this:
 ```javascript
+// Parse the timestamp (if any).
 let { timestamp } = response.data;
 if (timestamp != undefined) {
 	timestamp = Date.parse(timestamp);
@@ -54,6 +60,7 @@ if (timestamp != undefined) {
 ```
 And this<sup>*</sup>:
 ```javascript
+// Parse the timestamp (if any).
 let timestamp = Date.parse(response.data.timestamp);
 if (isNaN(timestamp)) {
 	timestamp = undefined;
@@ -61,26 +68,22 @@ if (isNaN(timestamp)) {
 ```
 And this dangerous<sup>**</sup> one:
 ```javascript
+// Parse the timestamp (if any).
 const timestamp = response.data.timestamp
 	&& Date.parse(response.data.timestamp);
 ```
 
 [*] In the alternative with `isNaN`, invalid timestamps (such as `'invalid'`) are indistinguishable from missing timestamps. This is likely unexpected behaviour.
 
-[**] In the alternative with the `&&` operator, `Date.parse` is skipped not only if the timestamp is `undefined` but also if it is `''` (or any other falsy value). This too is likely unexpected.
+[**] In the alternative with the `&&` operator, `Date.parse` is skipped not only if the timestamp is `undefined` but also if it is `''` (or any other [falsy value](https://developer.mozilla.org/docs/Glossary/Falsy)). This too is likely unexpected.
 
 ### `runIf` and `??`
 
-You can think of `runIf` as the opposite of the `??` operator.
+You can combine `runIf` and the `??` operator to provide a fallback value used if the callback is skipped.
 
 ```javascript
-console.log(a ?? b ?? c);
+return runIf(event.data, JSON.parse) ?? {};
 ```
-This logs `a`, unless `a` is null-ish in which case it logs `b`, unless `b` is also null-ish in which case it logs `c`. In other words: it logs the leftmost value that is not null-ish.
-```javascript
-console.log(runIf(a, () => b, () => c));
-```
-This logs `c`, unless `b` is null-ish in which case it logs `b`, unless `a` is also null-ish in which case it logs `a`. In other words: it logs the leftmost value that is null-ish.
 
 # Under the hood
 
@@ -122,9 +125,7 @@ const emailApi = new EmailApi(
 	configuration.email.sender
 );
 ```
-A few properties are read from `configuration.email`.
-
-`run` allows those properties to be destructured, without polluting the scope.
+`run` allows the properties to be destructured, without polluting the scope.
 ```javascript
 const emailApi = run(
 	configuration.email,
@@ -137,61 +138,60 @@ const emailApi = run(
 
 ```javascript
 logger.log(`Received ${bundles.reduce(
-	(total, { messages }) => total + messages.length, 0
-)} message(s) in ${bundles.length} bundle(s)`);
+	(sum, { messages }) => sum + messages.length, 0
+)} message(s)`);
 ```
-The message count is calculated from `bundles`.
-
-`run` moves the summing logic out of the template literal.
+`run` moves the summing logic outside the template literal.
 ```javascript
 run(
 	bundles.reduce(
-		(total, { messages }) => total + messages.length, 0
+		(sum, { messages }) => sum + messages.length, 0
 	),
 	messageCount =>
-		logger.log(`Received ${messageCount} message(s) `
-			+ `in ${bundles.length} bundle(s)`)
+		logger.log(`Received ${messageCount} message(s)`)
 );
 ```
 
-## Return statement with side effect
+## Side effect in fallback
 
 ```javascript
-const id = sendMessage(body);
-logger.log(`Message #${id} sent`);
-return id;
+if (data.has(index)) {
+	return data.get(index);
+} else {
+	const buffer = Buffer.alloc(size);
+	data.set(index, buffer);
+	return buffer;
+}
 ```
-A message is logged after `sendMessage` is called.
-
-`apply` puts `return` and `sendMessage(…)` closer together.
+`apply` reorders the pieces, producing code closer to human speech.
 ```javascript
-return apply(
-	sendMessage(body),
-	id => logger.log(`Message #${id} sent`)
-);
+return data.get(index)
+	?? apply(
+		Buffer.alloc(size),
+		buffer => data.set(index, buffer)
+	);
 ```
 
 ## Timed asynchronous function
 
 ```javascript
-console.time('query-database');
+const start = performance.now();
 const result = await queryDatabase();
-console.timeEnd('query-database');
+console.log(`${performance.now() - start} ms`);
 return result;
 ```
-The asynchronous `queryDatabase` function is timed.
-
-`apply` removes the need for the short-lived variable.
+`apply` removes the need for the short-lived variable, and places `return` and `queryDatabase()` closer together.
 ```javascript
-console.time('query-database');
+const start = performance.now();
 return apply(
 	queryDatabase(),
-	() => console.timeEnd('query-database')
+	() => console.log(`${performance.now() - start} ms`)
 );
 ```
 The `await` keyword is optional, as `apply` is promise-aware.
 
 ## Optional chain
+
 ```javascript
 const token =
 	request.headers.authorization != undefined
@@ -200,9 +200,7 @@ const token =
 		)?.[1]
 		: undefined;
 ```
-The header can be missing, and the regular expression can produce `null`.
-
-`runIf` cuts out the `undefined` check as well as the `?.` operator.
+`runIf` cuts out the `undefined` check (for cases where the header is missing) as well as the `?.` operator (for cases where the regular expression returns `null`).
 ```javascript
 const token = runIf(
 	request.headers.authorization,
@@ -210,23 +208,30 @@ const token = runIf(
 	([, token]) => token
 );
 ```
+If you prefer keeping the `?.` operator, then you should.
+```javascript
+const token = runIf(
+	request.headers.authorization,
+	headerValue => /^Bearer\s+(.*)$/.exec(headerValue)
+)?.[1];
+```
 
 ## Optional step
 
 ```javascript
 const value = await cache.get(key);
+// Discard the value if it has expired.
 if (value == null || value.expiration < Date.now()) {
 	return null;
 }
 return value;
 ```
-The asynchronous `cache.get` function returns `null` if there is no cached value. A check is performed to ensure no expired values are returned.
-
 `runIf` cuts out the `null` check.
 ```javascript
 return runIf(
 	cache.get(key),
+	// Discard the value if it has expired.
 	value => value.expiration < Date.now() ? null : value
 );
 ```
-There is no need for the `await` keyword, since `runIf` is promise-aware.
+The `await` keyword is optional, as `runIf` is promise-aware.
