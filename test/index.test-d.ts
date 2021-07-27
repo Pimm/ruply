@@ -24,16 +24,6 @@ function returnNull(value: number) {
 async function asyncReturnNull(value: number) {
 	return null;
 }
-// apply with one callback.
-expectType<number>(apply(aNumber, convertNumberToString));
-expectType<Promise<number>>(apply(aNumeralPromise, convertNumberToString));
-expectType<Promise<number>>(apply(aNumber, asyncConvertNumberToString));
-expectType<Promise<number>>(apply(aNumeralPromise, asyncConvertNumberToString));
-// apply with multiple callbacks.
-expectType<number>(apply(aNumber, increment, increment, increment));
-expectType<Promise<number>>(apply(aNumeralPromise, increment, increment, increment));
-expectType<Promise<number>>(apply(aNumber, increment, asyncIncrement, increment));
-expectType<Promise<number>>(apply(aNumeralPromise, increment, asyncIncrement, increment));
 // run with one callback.
 expectType<string>(run(aNumber, convertNumberToString));
 expectType<Promise<string>>(run(aNumeralPromise, convertNumberToString));
@@ -51,6 +41,16 @@ expectType<Promise<string> | null>(runIf(aNumberOrNull, asyncConvertNumberToStri
 expectType<Promise<string> | Promise<null>>(runIf(aNumeralOrNullPromise, asyncConvertNumberToString));
 expectType<Promise<string> | null>(runIf(aNumeralPromiseOrNull, convertNumberToString));
 expectType<Promise<string> | null>(runIf(aNumeralPromiseOrNull, asyncConvertNumberToString));
+// apply with one callback.
+expectType<number>(apply(aNumber, convertNumberToString));
+expectType<Promise<number>>(apply(aNumeralPromise, convertNumberToString));
+expectType<Promise<number>>(apply(aNumber, asyncConvertNumberToString));
+expectType<Promise<number>>(apply(aNumeralPromise, asyncConvertNumberToString));
+// apply with multiple callbacks.
+expectType<number>(apply(aNumber, increment, increment, increment));
+expectType<Promise<number>>(apply(aNumeralPromise, increment, increment, increment));
+expectType<Promise<number>>(apply(aNumber, increment, asyncIncrement, increment));
+expectType<Promise<number>>(apply(aNumeralPromise, increment, asyncIncrement, increment));
 // run with multiple callbacks.
 expectType<string>(run(aNumber, increment, increment, convertNumberToString));
 expectType<Promise<string>>(run(aNumeralPromise, increment, increment, convertNumberToString));
