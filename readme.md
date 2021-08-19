@@ -112,26 +112,21 @@ Non-goals include:
 1. producing the shortest possible code, and
 2. producing clever code.
 
-Use `run[If]` and `apply` in situations where you feel it helps the reader of your code.
+Use `run[If]` and `apply` in situations where you feel they help the reader of your code.
 
 # More examples
 
-## Local destructure
+## Shielded variable
 
 ```javascript
-const emailApi = new EmailApi(
-	configuration.email.clientID,
-	configuration.email.clientSecret,
-	configuration.email.sender
-);
+let available = 0;
+function generateID() {
+	return available++;
+}
 ```
-`run` allows the properties to be destructured, without polluting the scope.
+`run` scopes the variable, protecting it from accidental access.
 ```javascript
-const emailApi = run(
-	configuration.email,
-	({ clientID, clientSecret, sender }) =>
-		new EmailApi(clientID, clientSecret, sender)
-);
+const generateID = run(0, available => () => available++);
 ```
 
 ## Encapsulated logic
@@ -158,7 +153,9 @@ run(
 if (data.has(index)) {
 	return data.get(index);
 } else {
+	// If the buffer does not exist, allocate it…
 	const buffer = Buffer.alloc(size);
+	// …and store it in the map.
 	data.set(index, buffer);
 	return buffer;
 }
@@ -167,7 +164,9 @@ if (data.has(index)) {
 ```javascript
 return data.get(index)
 	?? apply(
+		// If the buffer does not exist, allocate it…
 		Buffer.alloc(size),
+		// …and store it in the map.
 		buffer => data.set(index, buffer)
 	);
 ```
@@ -200,7 +199,7 @@ const token =
 		)?.[1]
 		: undefined;
 ```
-`runIf` cuts out the `undefined` check (for cases where the header is missing) as well as the `?.` operator (for cases where the regular expression returns `null`).
+`runIf` cuts out the `undefined` check (for cases where the header is missing) as well as the `?.` operator (for cases where the regular expression does not match).
 ```javascript
 const token = runIf(
 	request.headers.authorization,
@@ -220,7 +219,7 @@ const token = runIf(
 
 ```javascript
 const value = await cache.get(key);
-// Discard the value if it has expired.
+// Disregard the value if it has expired.
 if (value == null || value.expiration < Date.now()) {
 	return null;
 }
@@ -230,7 +229,7 @@ return value;
 ```javascript
 return runIf(
 	cache.get(key),
-	// Discard the value if it has expired.
+	// Disregard the value if it has expired.
 	value => value.expiration < Date.now() ? null : value
 );
 ```
