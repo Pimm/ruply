@@ -94,13 +94,13 @@ function run(value, callback) {
 	return callback(value);
 }
 
-function runIf(value, callback) {
-	return value != null ? callback(value) : value;
-}
-
 function apply(value, callback) {
 	callback(value);
 	return value;
+}
+
+function runIf(value, callback) {
+	return value != null ? callback(value) : value;
 }
 ```
 
