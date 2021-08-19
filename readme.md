@@ -20,7 +20,7 @@ const area = width * height;
 
 # `apply`
 
-`apply` forwards the value to your callback ‒ just like `run` does ‒ but returns the value itself.
+`apply` forwards the first argument to your callback ‒ just like `run` does ‒ but returns the first argument, always.
 
 ```javascript
 // Remove the item from the selection.
