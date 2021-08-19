@@ -11,7 +11,7 @@ const area = run(
 	({ width, height }) => width * height
 );
 ```
-`width` and `height` are neatly confined to the callback. The alternative without `run` has those variables overstay their welcome:
+`width` and `height` are neatly confined to the callback. The alternative without `run` has those variables overstay their welcome, polluting the scope:
 ```javascript
 // Calculate the area.
 const { width, height } = getSize();
@@ -29,7 +29,7 @@ setState(previousSelection => apply(
 	selection => selection.delete(item)
 ));
 ```
-The alternative without `apply` uses the `return` keyword and is more wordy:
+The alternative without `apply` is more wordy:
 ```javascript
 // Remove the item from the selection.
 setState(previousSelection => {
