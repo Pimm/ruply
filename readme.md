@@ -79,7 +79,7 @@ const timestamp = response.data.timestamp
 
 ### `runIf` and `??`
 
-You can combine `runIf` and the `??` operator to provide a fallback value used if the callback is skipped.
+You can combine `runIf` and the `??` operator to provide a fallback used if the callback is skipped.
 
 ```javascript
 return runIf(event.data, JSON.parse) ?? {};
