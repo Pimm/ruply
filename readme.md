@@ -2,7 +2,7 @@
 
 # `run`
 
-`run` forwards the value to your callback, and returns the result.
+`run` forwards the first argument to your callback, and returns the result.
 
 ```javascript
 // Calculate the area.
@@ -20,7 +20,7 @@ const area = width * height;
 
 # `apply`
 
-`apply` forwards the first argument to your callback ‒ just like `run` does ‒ but returns the first argument, always.
+`apply` forwards the first argument to your callback ‒ just like `run` does ‒ but returns that argument instead of the result.
 
 ```javascript
 // Remove the item from the selection.
@@ -41,7 +41,7 @@ setState(previousSelection => {
 
 # `runIf`
 
-`runIf` skips the callback if the value is [nullish](https://developer.mozilla.org/docs/Glossary/Nullish), and behaves the same as `run` otherwise. `runIf` is to `run` as the `?.` operator is to the `.` operator.
+`runIf` skips the callback if the first argument is [nullish](https://developer.mozilla.org/docs/Glossary/Nullish), and behaves the same as `run` otherwise. `runIf` is to `run` as the `?.` operator is to the `.` operator.
 
 ```javascript
 // Parse the timestamp (if any).
