@@ -2,7 +2,7 @@
 
 # `run`
 
-`run` forwards the first argument to your callback, and returns the result.
+`run` forwards the first argument to the callback, and returns the result.
 
 ```javascript
 // Calculate the area.
@@ -20,7 +20,7 @@ const area = width * height;
 
 # `apply`
 
-`apply` forwards the first argument to your callback ‒ just like `run` does ‒ but returns that argument instead of the result.
+`apply` forwards the first argument to the callback ‒ just like `run` does ‒ but returns that argument instead of the result.
 
 ```javascript
 // Remove the item from the selection.
