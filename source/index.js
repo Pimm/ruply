@@ -55,7 +55,24 @@ function build(name, logic) {
 	);
 }
 /**
- * Calls the passed callback, forwarding the value and routing back whatever is returned.
+ * Calls the passed callback, forwarding the first argument and routing back whatever is returned.
+ *
+ * This is a simplified implementation of `run`:
+ * ```
+ * function run(value, callback) {
+ *   return callback(value);
+ * }
+ * ```
+ *
+ * #### Promises
+ *
+ * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
+ * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
+ * If the promise rejects, the passed callback is skipped.
+ *
+ * #### Chains
+ *
+ * If multiple callbacks are passed, they are called subsequently. `run(x, a, b)` is equivalent to `run(run(x, a), b)`.
  */
 export const run =
 	build(
@@ -65,8 +82,26 @@ export const run =
 		}
 	),
 /**
- * Calls the passed callback ‒ forwarding the value and routing back whatever is returned ‒ if the passed value is not
- * null-ish. If the passed value is null-ish, it is returned directly and the passed callback is skipped.
+ * Calls the passed callback ‒ forwarding the argument and routing back whatever is returned ‒ if the first argument is
+ * not null-ish. If the first argument is null-ish, it is returned directly and the passed callback is skipped.
+ *
+ * This is a simplified implementation of `runIf`:
+ * ```
+ * function runIf(value, callback) {
+ *   return value != null ? callback(value) : value;
+ * }
+ * ```
+ *
+ * #### Promises
+ *
+ * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
+ * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
+ * If the value to which the promise resolves is null-ish or the promise rejects, the passed callback is skipped.
+ *
+ * #### Chains
+ *
+ * If multiple callbacks are passed, they are called subsequently—respecting the logic regarding null-ish values.
+ * `runIf(x, a, b)` is equivalent to `runIf(runIf(x, a), b)`
  */
 	runIf =
 	build(
@@ -76,7 +111,25 @@ export const run =
 		}
 	),
 /**
- * Calls the passed callback, forwarding the value and returning it afterwards.
+ * Calls the passed callback, forwarding the first argument and returning that argument afterwards.
+ *
+ * This is a simplified implementation of `apply`:
+ * ```
+ * function apply(value, callback) {
+ *   callback(value);
+ *   return value;
+ * }
+ * ```
+ * #### Promises
+ *
+ * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
+ * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
+ * If the promise rejects, the passed callback is skipped.
+ *
+ * #### Chains
+ *
+ * If multiple callbacks are passed, they are called subsequently. `apply(x, a, b)` is equivalent to
+ * `apply(apply(x, a), b)`.
  */
 	apply =
 	build(
