@@ -1,3 +1,5 @@
+# ruply &middot; [![License (X11/MIT)](https://badgen.net/github/license/pimm/ruply)](https://github.com/Pimm/ruply/blob/master/copying.txt) [![npm version](https://badgen.net/npm/v/ruply)](https://www.npmjs.com/package/ruply) [![Build status](https://travis-ci.com/Pimm/ruply.svg?branch=master)](https://travis-ci.com/Pimm/ruply) [![Coverage status](https://coveralls.io/repos/github/Pimm/ruply/badge.svg?branch=master)](https://coveralls.io/github/Pimm/ruply?branch=master)
+
 `run[If]` and `apply` are functions that can help you craft easy-to-read code.
 
 # `run`
@@ -83,6 +85,13 @@ You can combine `runIf` and the `??` operator to provide a fallback used if the 
 
 ```javascript
 return runIf(event.data, JSON.parse) ?? {};
+```
+
+# Installation
+
+Install `ruply` using npm or Yarn and import the functions:
+```javascript
+import { run, apply, runIf } from 'ruply';
 ```
 
 # Under the hood
