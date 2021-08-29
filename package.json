@@ -1,7 +1,7 @@
 {
   "name": "ruply",
   "version": "1.0.0",
-  "description": "run and apply functions for easy-to-read code",
+  "description": "run[If] and apply functions for easy-to-read code",
   "main": "compiled/cjs/ruply.min.js",
   "directories": {
     "test": "test"

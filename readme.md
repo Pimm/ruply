@@ -87,7 +87,7 @@ return runIf(event.data, JSON.parse) ?? {};
 
 # Under the hood
 
-These are simplified implementations of `run[If]` and `apply` (without support for promises or multiple callbacks):
+These are simplified implementations of `run[If]` and `apply` (without support for promises or chains):
 
 ```javascript
 function run(value, callback) {
@@ -152,15 +152,14 @@ run(
 ```javascript
 if (data.has(index)) {
 	return data.get(index);
-} else {
-	// If the buffer does not exist, allocate it…
-	const buffer = Buffer.alloc(size);
-	// …and store it in the map.
-	data.set(index, buffer);
-	return buffer;
 }
+// If the buffer does not exist, allocate it…
+const buffer = Buffer.alloc(size);
+// …and store it in the map.
+data.set(index, buffer);
+return buffer;
 ```
-`apply` reorders the pieces, producing code closer to human speech.
+`apply` rearranges the pieces, producing code closer to human speech.
 ```javascript
 return data.get(index)
 	?? apply(
@@ -234,6 +233,27 @@ return runIf(
 );
 ```
 The `await` keyword is optional, as `runIf` is promise-aware.
+
+## Memoisation
+
+```javascript
+const orders = new Map();
+function memoGetOrder(id) {
+	if (orders.has(id)) {
+		return orders.get(id);
+	}
+	const order = getOrder(id);
+	orders.set(id, order);
+	return order;
+}
+```
+`run` scopes the map, while `apply` rearranges the pieces of the function body to match the human speech equivalent.
+```javascript
+const memoGetOrder = run(new Map(), orders =>
+	id => orders.get(id)
+		?? apply(getOrder(id), order => orders.set(id, order))
+);
+```
 
 # Pronunciation
 
