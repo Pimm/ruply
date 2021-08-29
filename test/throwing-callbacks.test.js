@@ -26,7 +26,7 @@ function resolveShortly(value) {
 
 test('throwing-callbacks', () => {
 	expect.assertions(24);
-	// Simple run(If).
+	// Simple run[If].
 	run(createThrowingCallback(), throwingCallback => {
 		expect(() => run('value', throwingCallback)).toThrow('error');
 		expect(throwingCallback).toBeCalledWith('value');
@@ -41,7 +41,7 @@ test('throwing-callbacks', () => {
 		expect(throwingCallback).toBeCalledWith('value');
 	});
 	return Promise.all([
-		// run(If) with async callback.
+		// run[If] with async callback.
 		run(createAsyncThrowingCallback(), throwingCallback => {
 			return expect(run('value', throwingCallback)).rejects.toBe('error')
 			.then(() => expect(throwingCallback).toBeCalledWith('value'));
@@ -55,7 +55,7 @@ test('throwing-callbacks', () => {
 			return expect(apply('value', throwingCallback)).rejects.toBe('error')
 			.then(() => expect(throwingCallback).toBeCalledWith('value'));
 		}),
-		// run(If) with promise.
+		// run[If] with promise.
 		run(createThrowingCallback(), throwingCallback => {
 			return expect(run(resolveShortly('value'), throwingCallback)).rejects.toBe('error')
 			.then(() => expect(throwingCallback).toBeCalledWith('value'));
@@ -69,7 +69,7 @@ test('throwing-callbacks', () => {
 			return expect(apply(resolveShortly('value'), throwingCallback)).rejects.toBe('error')
 			.then(() => expect(throwingCallback).toBeCalledWith('value'));
 		}),
-		// run(If) with promise and async callback.
+		// run[If] with promise and async callback.
 		run(createAsyncThrowingCallback(), throwingCallback => {
 			return expect(run(resolveShortly('value'), throwingCallback)).rejects.toBe('error')
 			.then(() => expect(throwingCallback).toBeCalledWith('value'));

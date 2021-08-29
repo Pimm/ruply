@@ -14,7 +14,7 @@ function resolveShortly(value) {
 
 test('explicit-this', () => {
 	expect.assertions(12);
-	// run(If).
+	// run[If].
 	(() => {
 		var context;
 		expect(
@@ -47,7 +47,7 @@ test('explicit-this', () => {
 		expect(context).toBe('context');
 	})();
 	return Promise.all([
-		// run(If) with promise.
+		// run[If] with promise.
 		(() => {
 			var context;
 			return expect(

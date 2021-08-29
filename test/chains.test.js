@@ -14,7 +14,7 @@ function createNullReturningCallback() {
 
 test('chains', () => {
 	expect.assertions(24);
-	// run(If) with a complete chain.
+	// run[If] with a complete chain.
 	run([createIncrement(), createIncrement(), createIncrement()], callbacks => {
 		expect(
 			run(5, ...callbacks)
@@ -40,7 +40,7 @@ test('chains', () => {
 		expect(callbacks[1]).toBeCalledWith(5);
 		expect(callbacks[2]).toBeCalledWith(5);
 	});
-	// run(If) with a broken chain.
+	// run[If] with a broken chain.
 	run([createIncrement(), createNullReturningCallback(), createIncrement()], callbacks => {
 		expect(
 			run(5, ...callbacks)

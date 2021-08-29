@@ -10,7 +10,7 @@ function createCallback() {
 
 test('basics', () => {
 	expect.assertions(18);
-	// run(If) with non-null-ish argument.
+	// run[If] with non-null-ish argument.
 	run(createCallback(), callback => {
 		expect(
 			run('value', callback)
@@ -30,7 +30,7 @@ test('basics', () => {
 		).toBe('value');
 		expect(callback).toBeCalledWith('value');
 	});
-	// run(If) with null argument.
+	// run[If] with null argument.
 	run(createCallback(), callback => {
 		expect(
 			run(null, callback)
@@ -50,7 +50,7 @@ test('basics', () => {
 		).toBe(null);
 		expect(callback).toBeCalledWith(null);
 	});
-	// run(If) with undefined argument.
+	// run[If] with undefined argument.
 	run(createCallback(), callback => {
 		expect(
 			run(undefined, callback)

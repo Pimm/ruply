@@ -23,7 +23,7 @@ function resolveShortly(value) {
 test('async-callback', () => {
 	expect.assertions(12);
 	return Promise.all([
-		// run(If) with non-null-ish argument.
+		// run[If] with non-null-ish argument.
 		run(createAsyncCallback(), callback => {
 			return expect(
 				run('value', callback)
@@ -43,7 +43,7 @@ test('async-callback', () => {
 			).resolves.toBe('value')
 			.then(() => expect(callback).toBeCalledWith('value'));
 		}),
-		// run(If) with null argument.
+		// run[If] with null argument.
 		run(createAsyncCallback(), callback => {
 			return expect(
 				run(null, callback)
@@ -69,7 +69,7 @@ test('async-callback', () => {
 test('promise-value', () => {
 	expect.assertions(13);
 	return Promise.all([
-		// run(If) with promise which resolves to non-null-ish value.
+		// run[If] with promise which resolves to non-null-ish value.
 		run(createCallback(), callback => {
 			return expect(
 				run(resolveShortly('value'), callback)
@@ -92,7 +92,7 @@ test('promise-value', () => {
 			.then(() => expect(Date.now() - startTime).toBeGreaterThanOrEqual(10))
 			.then(() => expect(callback).toBeCalledWith('value'));
 		}),
-		// run(If) with promise which resolves to null.
+		// run[If] with promise which resolves to null.
 		run(createCallback(), callback => {
 			return expect(
 				run(resolveShortly(null), callback)
@@ -118,7 +118,7 @@ test('promise-value', () => {
 test('promise-value-async-callback', () => {
 	expect.assertions(13);
 	return Promise.all([
-		// run(If) with promise which resolves to non-null-ish value.
+		// run[If] with promise which resolves to non-null-ish value.
 		run(createAsyncCallback(), callback => {
 			return expect(
 				run(resolveShortly('value'), callback)
@@ -141,7 +141,7 @@ test('promise-value-async-callback', () => {
 			.then(() => expect(Date.now() - startTime).toBeGreaterThanOrEqual(20))
 			.then(() => expect(callback).toBeCalledWith('value'));
 		}),
-		// run(If) with promise which resolves to null.
+		// run[If] with promise which resolves to null.
 		run(createAsyncCallback(), callback => {
 			return expect(
 				run(resolveShortly(null), callback)
