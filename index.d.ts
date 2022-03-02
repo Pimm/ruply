@@ -1,8 +1,16 @@
 type Nullish = null | undefined;
 /**
+ * If `T` is an array of functions, a union of the return type of those functions.
+ */
+type ReturnTypes<T extends Array<(...a: Array<any>) => any>> = T extends Array<(...a: Array<any>) => infer R> ? R : never;
+/**
  * If `T` is a `Promise`, the type of the values to which the promise resolves. Otherwise `T` itself.
  */
 type Resolve<T> = T extends Promise<infer A> ? A : T;
+/**
+ * An intersection of the types of which the union `T` consists.
+ */
+type Intersect<T> = (T extends any ? (faux: T) => void : never) extends (faux: infer U) => void ? U : never;
 /**
  * Like `Exclude` except that if `T` is a `Promise`, the exclusion logic is applied to the type of the values to which
  * the promise resolves instead of to `T` directly.
@@ -116,16 +124,11 @@ declare function runIf<T, Z, Y, X, W, R, C>(this: C, value: T, ...callback: [(th
  * If multiple callbacks are passed, they are called subsequently. `apply(x, a, b)` is equivalent to
  * `apply(apply(x, a), b)`.
  */
-declare function apply<T, Z, C>(this: C, value: T, ...callbacks: Array<(this: C, value: Resolve<T>) => Z>):
+declare function apply<T, Z, C>(this: C, value: T, callback: (this: C, value: Resolve<T>) => Z):
 	TransferAsynchronicity<Z, T>;
-declare function apply<T, Z, Y, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<T>) => Y]):
-	TransferAsynchronicity<Z & Y, T>;
-declare function apply<T, Z, Y, X, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<T>) => Y, (this: C, value: Resolve<T>) => X]):
-	TransferAsynchronicity<Z & Y & X, T>;
-declare function apply<T, Z, Y, X, W, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<T>) => Y, (this: C, value: Resolve<T>) => X, (this: C, value: Resolve<T>) => W]):
-	TransferAsynchronicity<Z & Y & X & W, T>;
-declare function apply<T, Z, Y, X, W, V, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<T>) => Y, (this: C, value: Resolve<T>) => X, (this: C, value: Resolve<T>) => W, (this: C, value: Resolve<T>) => V]):
-	TransferAsynchronicity<Z & Y & X & W & V, T>;
+// ↑ This overload is not strictly necessary. The one below is a generalised form of it.
+declare function apply<T, U extends Array<(this: C, value: Resolve<T>) => any>, C>(this: C, value: T, ...callbacks: U):
+	TransferAsynchronicity<Intersect<ReturnTypes<U>>, T>;
 
 export {
 	run, runIf,
