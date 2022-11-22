@@ -4,7 +4,7 @@
  *
  * An input is considered promise-like if it has a `then` property which can be retrieved and is a function.
  */
-export default function getValidThen(input, /* This is never provided, thus initially undefined → */ then) {
+export default function takeThen(input, /* This is never provided, thus initially undefined → */ then) {
 	// Return undefined if the input is null-ish. The try-catch below would cause undefined to be returned for those
 	// inputs anyway, making this if block technically redundant. However, it does speed up this function significantly
 	// for those inputs. See https://github.com/Pimm/ruply/issues/2.
@@ -18,5 +18,7 @@ export default function getValidThen(input, /* This is never provided, thus init
 	} catch (error) {
 		return /* undefined */;
 	}
+	// return 'function' == typeof then ? then.bind(input) : false;
+	//   ↓
 	return 'function' == typeof then && then.bind(input);
 }

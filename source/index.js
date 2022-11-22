@@ -1,4 +1,4 @@
-import getValidThen from './getValidThen';
+import takeThen from './takeThen';
 
 // Steal the splice function from this empty array.
 const { splice } = [];
@@ -20,8 +20,8 @@ function build(name, logic) {
 			const context = this,
 				forwardingArguments = arguments;
 			var result;
-			// If the value is thenable, recall this function (recursively) once it resolves.
-			const then = getValidThen(value);
+			// If the value is promise-like, recall this function (recursively) once it resolves.
+			const then = takeThen(value);
 			if (then) {
 				return then(value => {
 					// const [, ...callbacks] = arguments;
@@ -137,10 +137,10 @@ export const run =
 		'apply',
 		function applyLogic(value, callback, /* This is never provided, thus initially undefined → */ then) {
 			// Call the callback and check whether the result is promise-like.
-			return (then = getValidThen(callback.call(this, value)))
+			return (then = takeThen(callback.call(this, value)))
 				// If the result is promise-like, chain a function to it which will return the value, then return that chain.
 				? then(() => value)
-				// If the result is not thenable, return the value.
+				// If the result is not promise-like, return the value.
 				: value;
 		}
 	);
