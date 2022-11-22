@@ -22,7 +22,7 @@ function build(name, logic) {
 			var result;
 			// If the value is thenable, recall this function (recursively) once it resolves.
 			const then = getValidThen(value);
-			if (null != then) {
+			if (then) {
 				return then(value => {
 					// const [, ...callbacks] = arguments;
 					// return implementation.call(context, value, ...callbacks);
@@ -135,10 +135,10 @@ export const run =
 	apply =
 	build(
 		'apply',
-		function applyLogic(value, callback, then) {
-			// Call the callback and check if the result is thenable.
+		function applyLogic(value, callback, /* This is never provided, thus initially undefined → */ then) {
+			// Call the callback and check whether the result is promise-like.
 			return (then = getValidThen(callback.call(this, value)))
-				// chain a function to it which will return the value, and return that chain.
+				// If the result is promise-like, chain a function to it which will return the value, then return that chain.
 				? then(() => value)
 				// If the result is not thenable, return the value.
 				: value;

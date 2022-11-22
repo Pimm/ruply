@@ -1,26 +1,22 @@
 /**
- * Returns the bound `then` method of the passed object, if it exists and accessing it does not throw.
- * These conditions qualify the object as thenable.
- * If it does not qualify, it returns undefined.
+ * Returns the `then` property of the passed input, bound to the passed input, if said passed input is promise-like.
+ * Returns a falsy value (specifically `undefined` or `false`) otherwise.
+ *
+ * An input is considered promise-like if it has a `then` property which can be retrieved and is a function.
  */
-export default function getValidThen(input) {
-	// Promises/A+ defines a thenable as "an object or function that defines a then method."
-	// Note that this function does not check whether the input is an object or function. It would be fooled by a string
-	// if String.prototype.then is set.
-	// It does however compare to nullish, as this is a shortcut to avoid unnecessary catches, which may result in slow performance
-	// See https://github.com/Pimm/ruply/issues/2
-	// Also note that this function returns `undefined` if then is a getter which throws. One could argue that that is the
-	// desired behaviour, but it might hide underlying issues.
+export default function getValidThen(input, /* This is never provided, thus initially undefined → */ then) {
+	// Return undefined if the input is null-ish. The try-catch below would cause undefined to be returned for those
+	// inputs anyway, making this if block technically redundant. However, it does speed up this function significantly
+	// for those inputs. See https://github.com/Pimm/ruply/issues/2.
 	if (null == input) {
-		return;
+		return /* undefined */;
 	}
+	// Return undefined if retrieving the then property causes an error to be thrown. Since the promise awareness is
+	// somewhat of a hidden feature of this library, it should be operate as unintrusive as possible.
 	try {
-		var { then } = input;
+		({ then } = input);
 	} catch (error) {
-		return;
+		return /* undefined */;
 	}
-	if ('function' != typeof then) {
-		return;
-	}
-	return then.bind(input);
+	return 'function' == typeof then && then.bind(input);
 }
