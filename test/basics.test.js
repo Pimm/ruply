@@ -9,7 +9,7 @@ function createCallback() {
 }
 
 test('basics', () => {
-	expect.assertions(18);
+	expect.assertions(21);
 	// run[If] with non-null-ish argument.
 	run(createCallback(), callback => {
 		expect(
@@ -69,5 +69,24 @@ test('basics', () => {
 			apply(undefined, callback)
 		).toBe(undefined);
 		expect(callback).toBeCalledWith(undefined);
+	});
+	// apply with object, which has a then getter which throws.
+	run(createCallback(), callback => {
+		const throwingGetter = {
+			get then() { throw new Error() }
+		}
+		expect(
+			() => apply(throwingGetter, callback)
+		).not.toThrow();
+		expect(callback).toHaveBeenCalledWith(throwingGetter);
+	});
+	// apply with object, where any getter throws.
+	run(createCallback(), callback => {
+		const throwingGetter = new Proxy({}, {
+			get then() { throw new Error() }
+		});
+		expect(
+			() => apply(throwingGetter, callback)
+		).not.toThrow();
 	});
 });
