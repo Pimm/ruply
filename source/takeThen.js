@@ -12,7 +12,7 @@ export default function takeThen(input, /* This is never provided, thus initiall
 		return /* undefined */;
 	}
 	// Return undefined if retrieving the then property causes an error to be thrown. Since the promise awareness is
-	// somewhat of a hidden feature of this library, it should be operate as unintrusive as possible.
+	// somewhat of a hidden feature of this library, it should operate as unintrusive as possible.
 	try {
 		({ then } = input);
 	} catch (error) {
