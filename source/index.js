@@ -1,4 +1,4 @@
-import checkThenable from './checkThenable';
+import getValidThen from './getValidThen';
 
 // Steal the splice function from this empty array.
 const { splice } = [];
@@ -21,8 +21,9 @@ function build(name, logic) {
 				forwardingArguments = arguments;
 			var result;
 			// If the value is thenable, recall this function (recursively) once it resolves.
-			if (checkThenable(value)) {
-				return value.then(value => {
+			const then = getValidThen(value);
+			if (null != then) {
+				return then(value => {
 					// const [, ...callbacks] = arguments;
 					// return implementation.call(context, value, ...callbacks);
 					//   ↓
@@ -134,17 +135,12 @@ export const run =
 	apply =
 	build(
 		'apply',
-		function applyLogic(value, callback, result) {
-			if (
-				// Call the callback. If the result is thenable, chain a function to it which will return the value, and return
-				// that chain.
-				checkThenable(
-					result = callback.call(this, value)
-				)
-			) {
-				return result.then(() => value);
-			}
-			// If the result is not thenable, return the value.
-			return value;
+		function applyLogic(value, callback, then) {
+			// Call the callback and check if the result is thenable.
+			return (then = getValidThen(callback.call(this, value)))
+				// chain a function to it which will return the value, and return that chain.
+				? then(() => value)
+				// If the result is not thenable, return the value.
+				: value;
 		}
 	);
