@@ -1,7 +1,7 @@
 {
   "name": "ruply",
   "description": "run[If] and apply functions for easy-to-read code",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "compiled/cjs/ruply.min.js",
   "module": "compiled/esm/ruply.min.js",
   "types": "index.d.ts",
