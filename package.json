@@ -26,7 +26,7 @@
   "scripts": {
     "build": "rollup --config rollup.config.js",
     "test": "npm run-script build && jest && tsd test",
-    "coverage": "npm run-script build && jest --coverage --coverageReporters=text-lcov | coveralls"
+    "coverage": "npm run-script build && jest --coverage"
   },
   "author": {
     "name": "Nullhouse",
