@@ -22,14 +22,15 @@ type ExtractAsynchronous<T, U> = T extends Promise<infer A> ? A extends U ? Prom
  */
 type ExcludeAsynchronousEach<T extends Array<unknown>, U> = { [K in keyof T]: ExcludeAsynchronous<T[K], U> };
 /**
- * If `U` is a `Promise` and `T` is not a `Promise`, a `Promise` which resolves to values of type `T`. Otherwise `T`
- * itself.
+ * If `U` is a `Promise` and `T` is not a `Promise`, a `Promise` which resolves to values of type `T`. If `U` is
+ * `never` (there is no value from which `T` could be reached), `never`. Otherwise `T` itself.
  */
-type TransferAsynchronicity<U, T> = T extends Promise<any> ? T : U extends Promise<any> ? Promise<T> : T;
+type TransferAsynchronicity<U, T> = U extends Promise<any> ? T extends Promise<any> ? T : Promise<T> : T;
 /**
  * `TransferAsynchronicity` applied for every type in the tuple `U`: if any type in `U` is a `Promise` and `T` is not a
- * `Promise`, a `Promise` which resolves to values of type `T`. Otherwise `T` itself. If `U` is an array rather than a
- * tuple (callbacks spread from an array), its element type stands in for every step.
+ * `Promise`, a `Promise` which resolves to values of type `T`. If any type in `U` is `never`, `never`. Otherwise `T`
+ * itself. If `U` is an array rather than a tuple (callbacks spread from an array), its element type stands in for every
+ * step.
  */
 type Chain<U extends Array<unknown>, T> =
 	U extends [infer A, ...infer B] ? TransferAsynchronicity<A, Chain<B, T>>
