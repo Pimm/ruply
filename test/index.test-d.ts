@@ -19,6 +19,7 @@ const returnNumberOrNull = (value: number) => value > 0 ? value : null;
 const asyncReturnNumberOrNull = async (value: number) => value > 0 ? value : null;
 const maybeAsyncIncrement = (value: number) => value > 0 ? value + 1 : Promise.resolve(value + 1);
 const getLength = (value: string) => value.length;
+const doNothing = (value: number) => {};
 // run with one callback.
 expectType<string>(run(aNumber, convertNumberToString));
 expectType<Promise<string>>(run(aNumeralPromise, convertNumberToString));
@@ -152,4 +153,45 @@ expectType<number | null>(context.runIf(aNumberOrNull, increment, function (valu
 expectType<number>(context.apply(aNumber, increment, function (value) {
 	expectType<typeof context>(this);
 	return value * this.factor;
+}));
+// run and runIf with callbacks which change the type of the value.
+expectType<number>(run(aNumber, convertNumberToString, getLength));
+expectType<string>(run(aNumber, convertNumberToString, getLength, convertNumberToString));
+expectType<number>(run(aNumber, value => `${value}`, value => value.length));
+expectType<Promise<number>>(run(aNumeralPromise, convertNumberToString, getLength));
+expectType<Promise<number>>(run(aNumber, asyncConvertNumberToString, getLength));
+expectType<number>(runIf(aNumber, convertNumberToString, getLength));
+expectType<number | null>(runIf(aNumberOrNull, convertNumberToString, getLength));
+expectType<string | null>(runIf(aNumberOrNull, convertNumberToString, getLength, convertNumberToString));
+expectType<Promise<number> | null>(runIf(aNumberOrNull, asyncConvertNumberToString, getLength));
+expectType<Promise<number> | Promise<null>>(runIf(aNumeralOrNullPromise, convertNumberToString, getLength));
+// apply with callbacks which return values of different types.
+expectType<number>(apply(aNumber, convertNumberToString, increment));
+expectType<number>(apply(aNumber, doNothing, increment));
+expectType<number>(apply(aNumber, returnNull, increment));
+expectType<Promise<number>>(apply(aNumber, convertNumberToString, asyncIncrement));
+expectType<Promise<number>>(apply(aNumber, doNothing, asyncIncrement));
+expectType<Promise<number>>(apply(aNumeralPromise, doNothing, increment));
+// apply with a callback which is only sometimes asynchronous.
+expectType<number | Promise<number>>(apply(aNumber, increment, maybeAsyncIncrement));
+// run and runIf with four or five callbacks which change the type of the value, or which are asynchronous or null-ish
+// in the middle of the chain.
+expectType<number>(run(aNumber, convertNumberToString, getLength, convertNumberToString, getLength));
+expectType<string>(run(aNumber, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString));
+expectType<Promise<number>>(run(aNumber, convertNumberToString, getLength, asyncConvertNumberToString, getLength));
+expectType<Promise<string>>(run(aNumeralPromise, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString));
+expectType<number | null>(runIf(aNumberOrNull, convertNumberToString, getLength, convertNumberToString, getLength));
+expectType<Promise<number> | null>(runIf(aNumberOrNull, convertNumberToString, getLength, asyncConvertNumberToString, getLength));
+expectType<null>(runIf(aNumber, convertNumberToString, getLength, returnNull, convertNumberToString));
+expectType<Promise<null>>(runIf(aNumeralPromise, convertNumberToString, getLength, returnNull, convertNumberToString, getLength));
+// apply with callbacks spread from an array rather than a tuple.
+declare const asyncCallbacks: Array<(value: number) => Promise<void>>;
+declare const maybeAsyncCallbacks: Array<(value: number) => void | Promise<void>>;
+expectType<Promise<number>>(apply(aNumber, ...asyncCallbacks));
+expectType<number | Promise<number>>(apply(aNumber, ...maybeAsyncCallbacks));
+expectType<Promise<number>>(apply(aNumber, increment, ...asyncCallbacks));
+expectType<Promise<number>>(apply(aNumeralPromise, ...maybeAsyncCallbacks));
+// apply keeps the context in a chain whose callbacks return different types.
+expectType<number>(context.apply(aNumber, increment, function (value) {
+	expectType<typeof context>(this);
 }));

@@ -1,16 +1,12 @@
 type Nullish = null | undefined;
 /**
- * If `T` is an array of functions, a union of the return type of those functions.
+ * If `T` is a tuple of functions, a tuple of the return types of those functions.
  */
-type ReturnTypes<T extends Array<(...a: Array<any>) => any>> = T extends Array<(...a: Array<any>) => infer R> ? R : never;
+type ReturnTypes<T extends Array<(...a: Array<any>) => any>> = { [K in keyof T]: T[K] extends (...a: Array<any>) => infer R ? R : never };
 /**
  * If `T` is a `Promise`, the type of the values to which the promise resolves. Otherwise `T` itself.
  */
 type Resolve<T> = T extends Promise<infer A> ? A : T;
-/**
- * An intersection of the types of which the union `T` consists.
- */
-type Intersect<T> = (T extends any ? (faux: T) => void : never) extends (faux: infer U) => void ? U : never;
 /**
  * Like `Exclude` except that if `T` is a `Promise`, the exclusion logic is applied to the type of the values to which
  * the promise resolves instead of to `T` directly.
@@ -22,10 +18,24 @@ type ExcludeAsynchronous<T, U> = T extends Promise<infer A> ? A extends U ? neve
  */
 type ExtractAsynchronous<T, U> = T extends Promise<infer A> ? A extends U ? Promise<A> : never : T extends U ? T : never;
 /**
+ * `ExcludeAsynchronous` applied to each type in the tuple `T`.
+ */
+type ExcludeAsynchronousEach<T extends Array<unknown>, U> = { [K in keyof T]: ExcludeAsynchronous<T[K], U> };
+/**
  * If `U` is a `Promise` and `T` is not a `Promise`, a `Promise` which resolves to values of type `T`. Otherwise `T`
  * itself.
  */
 type TransferAsynchronicity<U, T> = T extends Promise<any> ? T : U extends Promise<any> ? Promise<T> : T;
+/**
+ * `TransferAsynchronicity` applied for every type in the tuple `U`: if any type in `U` is a `Promise` and `T` is not a
+ * `Promise`, a `Promise` which resolves to values of type `T`. Otherwise `T` itself. If `U` is an array rather than a
+ * tuple (callbacks spread from an array), its element type stands in for every step.
+ */
+type Chain<U extends Array<unknown>, T> =
+	U extends [infer A, ...infer B] ? TransferAsynchronicity<A, Chain<B, T>>
+	: U extends [] ? T
+	: U extends Array<infer A> ? TransferAsynchronicity<A, T>
+	: T;
 /**
  * Calls the passed callback, forwarding the first argument and routing back whatever is returned.
  *
@@ -49,13 +59,13 @@ type TransferAsynchronicity<U, T> = T extends Promise<any> ? T : U extends Promi
 declare function run<T, R, C>(this: C, value: T, callback: (this: C, value: Resolve<T>) => R):
 	TransferAsynchronicity<T, R>;
 declare function run<T, Z, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<Z>) => R]):
-	TransferAsynchronicity<T & Z, R>;
+	Chain<[T, Z], R>;
 declare function run<T, Z, Y, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<Z>) => Y, (this: C, value: Resolve<Y>) => R]):
-	TransferAsynchronicity<T & Z & Y, R>;
+	Chain<[T, Z, Y], R>;
 declare function run<T, Z, Y, X, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<Z>) => Y, (this: C, value: Resolve<Y>) => X, (this: C, value: Resolve<X>) => R]):
-	TransferAsynchronicity<T & Z & Y & X, R>;
+	Chain<[T, Z, Y, X], R>;
 declare function run<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<Z>) => Y, (this: C, value: Resolve<Y>) => X, (this: C, value: Resolve<X>) => W, (this: C, value: Resolve<W>) => R]):
-	TransferAsynchronicity<T & Z & Y & X & W, R>;
+	Chain<[T, Z, Y, X, W], R>;
 /**
  * Calls the passed callback ‒ forwarding the argument and routing back whatever is returned ‒ if the first argument is
  * not null-ish. If the first argument is null-ish, it is returned directly and the passed callback is skipped.
@@ -84,25 +94,25 @@ declare function runIf<T, R, C>(this: C, value: T, callback: (this: C, value: Ex
 declare function runIf<T, Z, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => R]):
 	  ExtractAsynchronous<T, Nullish>
 	| TransferAsynchronicity<ExcludeAsynchronous<T, Nullish>, ExtractAsynchronous<Z, Nullish>>
-	| TransferAsynchronicity<ExcludeAsynchronous<T & Z, Nullish>, R>;
+	| Chain<ExcludeAsynchronousEach<[T, Z], Nullish>, R>;
 declare function runIf<T, Z, Y, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => R]):
 	  ExtractAsynchronous<T, Nullish>
 	| TransferAsynchronicity<ExcludeAsynchronous<T, Nullish>, ExtractAsynchronous<Z, Nullish>>
-	| TransferAsynchronicity<ExcludeAsynchronous<T & Z, Nullish>, ExtractAsynchronous<Y, Nullish>>
-	| TransferAsynchronicity<ExcludeAsynchronous<T & Z & Y, Nullish>, R>;
+	| Chain<ExcludeAsynchronousEach<[T, Z], Nullish>, ExtractAsynchronous<Y, Nullish>>
+	| Chain<ExcludeAsynchronousEach<[T, Z, Y], Nullish>, R>;
 declare function runIf<T, Z, Y, X, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => X, (this: C, value: Exclude<Resolve<X>, Nullish>) => R]):
 	  ExtractAsynchronous<T, Nullish>
 	| TransferAsynchronicity<ExcludeAsynchronous<T, Nullish>, ExtractAsynchronous<Z, Nullish>>
-	| TransferAsynchronicity<ExcludeAsynchronous<T & Z, Nullish>, ExtractAsynchronous<Y, Nullish>>
-	| TransferAsynchronicity<ExcludeAsynchronous<T & Z & Y, Nullish>, ExtractAsynchronous<X, Nullish>>
-	| TransferAsynchronicity<ExcludeAsynchronous<T & Z & Y & X, Nullish>, R>;
+	| Chain<ExcludeAsynchronousEach<[T, Z], Nullish>, ExtractAsynchronous<Y, Nullish>>
+	| Chain<ExcludeAsynchronousEach<[T, Z, Y], Nullish>, ExtractAsynchronous<X, Nullish>>
+	| Chain<ExcludeAsynchronousEach<[T, Z, Y, X], Nullish>, R>;
 declare function runIf<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => X, (this: C, value: Exclude<Resolve<X>, Nullish>) => W, (this: C, value: Exclude<Resolve<W>, Nullish>) => R]):
 	  ExtractAsynchronous<T, Nullish>
 	| TransferAsynchronicity<ExcludeAsynchronous<T, Nullish>, ExtractAsynchronous<Z, Nullish>>
-	| TransferAsynchronicity<ExcludeAsynchronous<T & Z, Nullish>, ExtractAsynchronous<Y, Nullish>>
-	| TransferAsynchronicity<ExcludeAsynchronous<T & Z & Y, Nullish>, ExtractAsynchronous<X, Nullish>>
-	| TransferAsynchronicity<ExcludeAsynchronous<T & Z & Y & X, Nullish>, ExtractAsynchronous<W, Nullish>>
-	| TransferAsynchronicity<ExcludeAsynchronous<T & Z & Y & X & W, Nullish>, R>;
+	| Chain<ExcludeAsynchronousEach<[T, Z], Nullish>, ExtractAsynchronous<Y, Nullish>>
+	| Chain<ExcludeAsynchronousEach<[T, Z, Y], Nullish>, ExtractAsynchronous<X, Nullish>>
+	| Chain<ExcludeAsynchronousEach<[T, Z, Y, X], Nullish>, ExtractAsynchronous<W, Nullish>>
+	| Chain<ExcludeAsynchronousEach<[T, Z, Y, X, W], Nullish>, R>;
 /**
  * Calls the passed callback, forwarding the first argument and returning that argument afterwards.
  *
@@ -128,7 +138,7 @@ declare function apply<T, Z, C>(this: C, value: T, callback: (this: C, value: Re
 	TransferAsynchronicity<Z, T>;
 // ↑ This overload is not strictly necessary. The one below is a generalised form of it.
 declare function apply<T, U extends Array<(this: C, value: Resolve<T>) => any>, C>(this: C, value: T, ...callbacks: U):
-	TransferAsynchronicity<Intersect<ReturnTypes<U>>, T>;
+	Chain<ReturnTypes<U>, T>;
 
 export {
 	run, runIf,
