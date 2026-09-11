@@ -113,6 +113,16 @@ declare function run<T, Z, Y, X, R, C>(this: C, value: T, ...callbacks: [(this: 
 	Chain<[T, Z, Y, X], R>;
 declare function run<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<Z>) => Y, (this: C, value: Resolve<Y>) => X, (this: C, value: Resolve<X>) => W, (this: C, value: Resolve<W>) => R]):
 	Chain<[T, Z, Y, X, W], R>;
+declare function run<T, Z, Y, X, W, V, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<Z>) => Y, (this: C, value: Resolve<Y>) => X, (this: C, value: Resolve<X>) => W, (this: C, value: Resolve<W>) => V, (this: C, value: Resolve<V>) => R]):
+	Chain<[T, Z, Y, X, W, V], R>;
+declare function run<T, Z, Y, X, W, V, U, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<Z>) => Y, (this: C, value: Resolve<Y>) => X, (this: C, value: Resolve<X>) => W, (this: C, value: Resolve<W>) => V, (this: C, value: Resolve<V>) => U, (this: C, value: Resolve<U>) => R]):
+	Chain<[T, Z, Y, X, W, V, U], R>;
+declare function run<T, Z, Y, X, W, V, U, S, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<Z>) => Y, (this: C, value: Resolve<Y>) => X, (this: C, value: Resolve<X>) => W, (this: C, value: Resolve<W>) => V, (this: C, value: Resolve<V>) => U, (this: C, value: Resolve<U>) => S, (this: C, value: Resolve<S>) => R]):
+	Chain<[T, Z, Y, X, W, V, U, S], R>;
+declare function run<T, Z, Y, X, W, V, U, S, Q, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<Z>) => Y, (this: C, value: Resolve<Y>) => X, (this: C, value: Resolve<X>) => W, (this: C, value: Resolve<W>) => V, (this: C, value: Resolve<V>) => U, (this: C, value: Resolve<U>) => S, (this: C, value: Resolve<S>) => Q, (this: C, value: Resolve<Q>) => R]):
+	Chain<[T, Z, Y, X, W, V, U, S, Q], R>;
+declare function run<T, Z, Y, X, W, V, U, S, Q, P, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Resolve<T>) => Z, (this: C, value: Resolve<Z>) => Y, (this: C, value: Resolve<Y>) => X, (this: C, value: Resolve<X>) => W, (this: C, value: Resolve<W>) => V, (this: C, value: Resolve<V>) => U, (this: C, value: Resolve<U>) => S, (this: C, value: Resolve<S>) => Q, (this: C, value: Resolve<Q>) => P, (this: C, value: Resolve<P>) => R]):
+	Chain<[T, Z, Y, X, W, V, U, S, Q, P], R>;
 /**
  * Calls the passed callback ‒ forwarding the argument and routing back whatever is returned ‒ if the first argument is
  * not null-ish. If the first argument is null-ish, it is returned directly and the passed callback is skipped.
@@ -145,6 +155,16 @@ declare function runIf<T, Z, Y, X, R, C>(this: C, value: T, ...callbacks: [(this
 	ChainUntilNullish<[T, Z, Y, X], R>;
 declare function runIf<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => X, (this: C, value: Exclude<Resolve<X>, Nullish>) => W, (this: C, value: Exclude<Resolve<W>, Nullish>) => R]):
 	ChainUntilNullish<[T, Z, Y, X, W], R>;
+declare function runIf<T, Z, Y, X, W, V, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => X, (this: C, value: Exclude<Resolve<X>, Nullish>) => W, (this: C, value: Exclude<Resolve<W>, Nullish>) => V, (this: C, value: Exclude<Resolve<V>, Nullish>) => R]):
+	ChainUntilNullish<[T, Z, Y, X, W, V], R>;
+declare function runIf<T, Z, Y, X, W, V, U, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => X, (this: C, value: Exclude<Resolve<X>, Nullish>) => W, (this: C, value: Exclude<Resolve<W>, Nullish>) => V, (this: C, value: Exclude<Resolve<V>, Nullish>) => U, (this: C, value: Exclude<Resolve<U>, Nullish>) => R]):
+	ChainUntilNullish<[T, Z, Y, X, W, V, U], R>;
+declare function runIf<T, Z, Y, X, W, V, U, S, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => X, (this: C, value: Exclude<Resolve<X>, Nullish>) => W, (this: C, value: Exclude<Resolve<W>, Nullish>) => V, (this: C, value: Exclude<Resolve<V>, Nullish>) => U, (this: C, value: Exclude<Resolve<U>, Nullish>) => S, (this: C, value: Exclude<Resolve<S>, Nullish>) => R]):
+	ChainUntilNullish<[T, Z, Y, X, W, V, U, S], R>;
+declare function runIf<T, Z, Y, X, W, V, U, S, Q, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => X, (this: C, value: Exclude<Resolve<X>, Nullish>) => W, (this: C, value: Exclude<Resolve<W>, Nullish>) => V, (this: C, value: Exclude<Resolve<V>, Nullish>) => U, (this: C, value: Exclude<Resolve<U>, Nullish>) => S, (this: C, value: Exclude<Resolve<S>, Nullish>) => Q, (this: C, value: Exclude<Resolve<Q>, Nullish>) => R]):
+	ChainUntilNullish<[T, Z, Y, X, W, V, U, S, Q], R>;
+declare function runIf<T, Z, Y, X, W, V, U, S, Q, P, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => X, (this: C, value: Exclude<Resolve<X>, Nullish>) => W, (this: C, value: Exclude<Resolve<W>, Nullish>) => V, (this: C, value: Exclude<Resolve<V>, Nullish>) => U, (this: C, value: Exclude<Resolve<U>, Nullish>) => S, (this: C, value: Exclude<Resolve<S>, Nullish>) => Q, (this: C, value: Exclude<Resolve<Q>, Nullish>) => P, (this: C, value: Exclude<Resolve<P>, Nullish>) => R]):
+	ChainUntilNullish<[T, Z, Y, X, W, V, U, S, Q, P], R>;
 /**
  * Calls the passed callback, forwarding the first argument and returning that argument afterwards.
  *

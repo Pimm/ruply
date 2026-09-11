@@ -258,3 +258,24 @@ expectType<never>(apply(aNumber, increment, throwError));
 expectType<never>(apply(aNumber, throwError, asyncIncrement));
 expectType<Promise<never>>(apply(aNumeralPromise, throwError));
 expectType<Promise<never>>(apply(aNumber, asyncIncrement, throwError));
+// run and runIf with chains of six to ten callbacks.
+expectType<string>(run(aNumber, increment, increment, increment, increment, increment, convertNumberToString));
+expectType<string>(run(aNumber, increment, increment, increment, increment, increment, increment, convertNumberToString));
+expectType<string>(run(aNumber, increment, increment, increment, increment, increment, increment, increment, convertNumberToString));
+expectType<string>(run(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, convertNumberToString));
+expectType<string>(run(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, increment, convertNumberToString));
+expectType<string | null>(runIf(aNumberOrNull, increment, increment, increment, increment, increment, convertNumberToString));
+expectType<string | null>(runIf(aNumberOrNull, increment, increment, increment, increment, increment, increment, convertNumberToString));
+expectType<string | null>(runIf(aNumberOrNull, increment, increment, increment, increment, increment, increment, increment, convertNumberToString));
+expectType<string | null>(runIf(aNumberOrNull, increment, increment, increment, increment, increment, increment, increment, increment, convertNumberToString));
+expectType<string | null>(runIf(aNumberOrNull, increment, increment, increment, increment, increment, increment, increment, increment, increment, convertNumberToString));
+// Chains of ten callbacks with changing types, asynchronous steps, null-ish values and errors.
+expectType<number>(run(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, convertNumberToString, getLength));
+expectType<Promise<number>>(run(aNumber, increment, increment, increment, increment, asyncIncrement, increment, increment, increment, convertNumberToString, getLength));
+expectType<Array<string>>(run(aNumber, value => value + 1, value => `${value}`, value => value.length, value => [value], ([value]) => value, value => value > 1, value => value ? 1 : 0, value => value.toFixed(), value => value.trim(), value => value.split('')));
+expectType<Promise<never>>(run(aNumber, asyncIncrement, increment, increment, increment, increment, increment, increment, increment, increment, throwError));
+expectType<number | null>(runIf(aNumberOrNull, increment, increment, increment, increment, increment, increment, increment, increment, convertNumberToString, getLength));
+expectType<Promise<number> | Promise<null>>(runIf(aNumeralOrNullPromise, increment, increment, increment, increment, increment, increment, increment, increment, convertNumberToString, getLength));
+expectType<null>(runIf(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, returnNull, asyncConvertNumberToString));
+expectType<Promise<null>>(runIf(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, asyncReturnNull, asyncConvertNumberToString));
+expectType<Promise<never>>(runIf(aNumeralPromise, increment, increment, increment, increment, increment, increment, increment, increment, increment, throwError));
