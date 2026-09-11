@@ -1,4 +1,7 @@
-type Nullish = null | undefined;
+/**
+ * The types which count as null-ish. Includes `void`, as a function without a return value results in `undefined`.
+ */
+type Nullish = null | undefined | void;
 /**
  * If `T` is a tuple of functions, a tuple of the return types of those functions.
  */
