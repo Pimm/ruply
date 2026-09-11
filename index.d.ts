@@ -18,10 +18,6 @@ type ExcludeAsynchronous<T, U> = T extends Promise<infer A> ? A extends U ? neve
  */
 type ExtractAsynchronous<T, U> = T extends Promise<infer A> ? A extends U ? Promise<A> : never : T extends U ? T : never;
 /**
- * `ExcludeAsynchronous` applied to each type in the tuple `T`.
- */
-type ExcludeAsynchronousEach<T extends Array<unknown>, U> = { [K in keyof T]: ExcludeAsynchronous<T[K], U> };
-/**
  * If `U` is a `Promise` and `T` is not a `Promise`, a `Promise` which resolves to values of type `T`. If `U` is
  * `never` (there is no value from which `T` could be reached), `never`. Otherwise `T` itself.
  */
@@ -37,6 +33,14 @@ type Chain<U extends Array<unknown>, T> =
 	: U extends [] ? T
 	: U extends Array<infer A> ? TransferAsynchronicity<A, T>
 	: T;
+/**
+ * Like `Chain`, except that a null-ish value ends the chain: it becomes part of the result, and only non-null-ish values
+ * are passed on to the next step.
+ */
+type ChainUntilNullish<U extends Array<unknown>, T> =
+	U extends [infer A, ...infer B]
+		? ExtractAsynchronous<A, Nullish> | TransferAsynchronicity<ExcludeAsynchronous<A, Nullish>, ChainUntilNullish<B, T>>
+		: T;
 /**
  * Calls the passed callback, forwarding the first argument and routing back whatever is returned.
  *
@@ -90,30 +94,15 @@ declare function run<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(thi
  * `runIf(x, a, b)` is equivalent to `runIf(runIf(x, a), b)`
  */
 declare function runIf<T, R, C>(this: C, value: T, callback: (this: C, value: Exclude<Resolve<T>, Nullish>) => R):
-	  ExtractAsynchronous<T, Nullish>
-	| TransferAsynchronicity<ExcludeAsynchronous<T, Nullish>, R>;
+	ChainUntilNullish<[T], R>;
 declare function runIf<T, Z, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => R]):
-	  ExtractAsynchronous<T, Nullish>
-	| TransferAsynchronicity<ExcludeAsynchronous<T, Nullish>, ExtractAsynchronous<Z, Nullish>>
-	| Chain<ExcludeAsynchronousEach<[T, Z], Nullish>, R>;
+	ChainUntilNullish<[T, Z], R>;
 declare function runIf<T, Z, Y, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => R]):
-	  ExtractAsynchronous<T, Nullish>
-	| TransferAsynchronicity<ExcludeAsynchronous<T, Nullish>, ExtractAsynchronous<Z, Nullish>>
-	| Chain<ExcludeAsynchronousEach<[T, Z], Nullish>, ExtractAsynchronous<Y, Nullish>>
-	| Chain<ExcludeAsynchronousEach<[T, Z, Y], Nullish>, R>;
+	ChainUntilNullish<[T, Z, Y], R>;
 declare function runIf<T, Z, Y, X, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => X, (this: C, value: Exclude<Resolve<X>, Nullish>) => R]):
-	  ExtractAsynchronous<T, Nullish>
-	| TransferAsynchronicity<ExcludeAsynchronous<T, Nullish>, ExtractAsynchronous<Z, Nullish>>
-	| Chain<ExcludeAsynchronousEach<[T, Z], Nullish>, ExtractAsynchronous<Y, Nullish>>
-	| Chain<ExcludeAsynchronousEach<[T, Z, Y], Nullish>, ExtractAsynchronous<X, Nullish>>
-	| Chain<ExcludeAsynchronousEach<[T, Z, Y, X], Nullish>, R>;
+	ChainUntilNullish<[T, Z, Y, X], R>;
 declare function runIf<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Resolve<T>, Nullish>) => Z, (this: C, value: Exclude<Resolve<Z>, Nullish>) => Y, (this: C, value: Exclude<Resolve<Y>, Nullish>) => X, (this: C, value: Exclude<Resolve<X>, Nullish>) => W, (this: C, value: Exclude<Resolve<W>, Nullish>) => R]):
-	  ExtractAsynchronous<T, Nullish>
-	| TransferAsynchronicity<ExcludeAsynchronous<T, Nullish>, ExtractAsynchronous<Z, Nullish>>
-	| Chain<ExcludeAsynchronousEach<[T, Z], Nullish>, ExtractAsynchronous<Y, Nullish>>
-	| Chain<ExcludeAsynchronousEach<[T, Z, Y], Nullish>, ExtractAsynchronous<X, Nullish>>
-	| Chain<ExcludeAsynchronousEach<[T, Z, Y, X], Nullish>, ExtractAsynchronous<W, Nullish>>
-	| Chain<ExcludeAsynchronousEach<[T, Z, Y, X, W], Nullish>, R>;
+	ChainUntilNullish<[T, Z, Y, X, W], R>;
 /**
  * Calls the passed callback, forwarding the first argument and returning that argument afterwards.
  *
