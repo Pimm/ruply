@@ -87,6 +87,32 @@ You can combine `runIf` and the `??` operator to provide a fallback used if the 
 return runIf(event.data, JSON.parse) ?? {};
 ```
 
+# Promises
+
+`run[If]` and `apply` are promise-aware: callbacks receive the value a promise resolves to, never the promise itself. This applies to the first argument as well as to promises returned by callbacks in a chain. `apply` waits for such a promise before calling the next callback, and resolves to the first argument. As soon as a promise is involved, a promise is returned. Pass the promise directly:
+
+```javascript
+// Fetch the order, and ensure it has been paid for.
+return apply(fetchOrder(id), assertPaid);
+```
+There is no need to wrap the call in `.then`. This is equivalent, but noisier:
+```javascript
+// Fetch the order, and ensure it has been paid for.
+return fetchOrder(id).then(order => apply(order, assertPaid));
+```
+
+### Errors
+
+Once a promise is involved ‒ as the first argument, or returned by a callback ‒ the remaining callbacks are called asynchronously, just like callbacks passed to `.then`. As a result, an error thrown by one of them is not thrown synchronously, but rejects the returned promise instead. If a promise rejects, the remaining callbacks are skipped and the rejection is passed on.
+
+```javascript
+try {
+	await apply(fetchOrder(id), assertPaid);
+} catch (error) {
+	// Errors thrown by assertPaid end up here, as do rejections of fetchOrder.
+}
+```
+
 # Installation
 
 Install `ruply` using npm or Yarn and import the functions:

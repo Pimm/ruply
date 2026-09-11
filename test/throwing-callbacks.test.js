@@ -25,7 +25,7 @@ function resolveShortly(value) {
 }
 
 test('throwing-callbacks', () => {
-	expect.assertions(24);
+	expect.assertions(30);
 	// Simple run[If].
 	run(createThrowingCallback(), throwingCallback => {
 		expect(() => run('value', throwingCallback)).toThrow('error');
@@ -67,6 +67,20 @@ test('throwing-callbacks', () => {
 		// apply with promise.
 		run(createThrowingCallback(), throwingCallback => {
 			return expect(apply(resolveShortly('value'), throwingCallback)).rejects.toBe('error')
+			.then(() => expect(throwingCallback).toBeCalledWith('value'));
+		}),
+		// run[If] with async callback followed by throwing callback.
+		run(createThrowingCallback(), throwingCallback => {
+			return expect(run('value', resolveShortly, throwingCallback)).rejects.toBe('error')
+			.then(() => expect(throwingCallback).toBeCalledWith('value'));
+		}),
+		run(createThrowingCallback(), throwingCallback => {
+			return expect(runIf('value', resolveShortly, throwingCallback)).rejects.toBe('error')
+			.then(() => expect(throwingCallback).toBeCalledWith('value'));
+		}),
+		// apply with async callback followed by throwing callback.
+		run(createThrowingCallback(), throwingCallback => {
+			return expect(apply('value', resolveShortly, throwingCallback)).rejects.toBe('error')
 			.then(() => expect(throwingCallback).toBeCalledWith('value'));
 		}),
 		// run[If] with promise and async callback.
