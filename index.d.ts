@@ -7,30 +7,35 @@ type Nullish = null | undefined | void;
  */
 type ReturnTypes<T extends Array<(...a: Array<any>) => any>> = { [K in keyof T]: T[K] extends (...a: Array<any>) => infer R ? R : never };
 /**
- * If `T` is a `Promise`, the type of the values to which the promise resolves. Otherwise `T` itself.
+ * If `T` is promise-like, the type of the values to which it resolves. Otherwise `T` itself.
  */
-type Resolve<T> = T extends Promise<infer A> ? A : T;
+type Resolve<T> = T extends PromiseLike<infer A> ? A : T;
 /**
- * Like `Exclude` except that if `T` is a `Promise`, the exclusion logic is applied to the type of the values to which
- * the promise resolves instead of to `T` directly.
+ * A promise of the same kind as the promise-like `T` which resolves to values of type `A`: a `Promise` if the `then`
+ * method of `T` returns promises, a `PromiseLike` otherwise.
  */
-type ExcludeAsynchronous<T, U> = T extends Promise<infer A> ? A extends U ? never : Promise<A> : T extends U ? never : T;
+type Rewrap<T, A> = T extends { then(...a: Array<any>): Promise<any> } ? Promise<A> : PromiseLike<A>;
 /**
- * Like `Extract` except that if `T` is a `Promise`, the extraction logic is applied to the type of the values to which
- * the promise resolves instead of to `T` directly.
+ * Like `Exclude` except that if `T` is promise-like, the exclusion logic is applied to the type of the values to which
+ * it resolves instead of to `T` directly.
  */
-type ExtractAsynchronous<T, U> = T extends Promise<infer A> ? A extends U ? Promise<A> : never : T extends U ? T : never;
+type ExcludeAsynchronous<T, U> = T extends PromiseLike<infer A> ? A extends U ? never : Rewrap<T, A> : T extends U ? never : T;
+/**
+ * Like `Extract` except that if `T` is promise-like, the extraction logic is applied to the type of the values to which
+ * it resolves instead of to `T` directly.
+ */
+type ExtractAsynchronous<T, U> = T extends PromiseLike<infer A> ? A extends U ? Rewrap<T, A> : never : T extends U ? T : never;
 /**
  * The type which results from passing values of type `U` on to a step which results in `T`:
  * - If `U` is `Thrown`, `Thrown`: the step is never taken.
  * - If `U` is `never` (there is no value from which the step is taken), `never`.
- * - If `U` is a `Promise`, `T` made asynchronous: `Promise<never>` if `T` is `Thrown` (the promise rejects), `T` itself
- *   if `T` is a `Promise`, and a `Promise` which resolves to values of type `T` otherwise.
+ * - If `U` is promise-like, `T` made asynchronous in the same way as `U` (as `U` resolves first): a promise of the
+ *   kind of `U` which rejects if `T` is `Thrown`, and which resolves to the values `T` resolves to otherwise.
  * - Otherwise `T` itself.
  */
 type TransferAsynchronicity<U, T> =
 	U extends Thrown ? Thrown
-	: U extends Promise<any> ? T extends Thrown ? Promise<never> : T extends Promise<any> ? T : Promise<T>
+	: U extends PromiseLike<any> ? T extends Thrown ? Rewrap<U, never> : Rewrap<U, Resolve<T>>
 	: T;
 /**
  * Stands in for the result of a callback which always throws, so it can be told apart from other occurrences of
@@ -48,11 +53,11 @@ type MarkThrown<T> = [T] extends [never] ? Thrown : T;
  */
 type UnmarkThrown<T> = Exclude<T, Thrown>;
 /**
- * `T` without `Promise<never>` if `T` includes other promises: a promise which always rejects adds nothing to a union
- * which is asynchronous anyway.
+ * `T` without promises which always reject (`Promise<never>`, `PromiseLike<never>`) if `T` includes other promises: a
+ * promise which always rejects adds nothing to a union which is asynchronous anyway.
  */
-type DropRedundantRejection<T> =
-	[Extract<Exclude<T, Promise<never>>, Promise<any>>] extends [never] ? T : Exclude<T, Promise<never>>;
+type DropRedundantRejection<T> = [Extract<WithoutRejections<T>, PromiseLike<any>>] extends [never] ? T : WithoutRejections<T>;
+type WithoutRejections<T> = T extends PromiseLike<infer A> ? [A] extends [never] ? never : T : T;
 /**
  * The type which results from passing values through the steps `U` on to a final step which results in `T`. If `U`
  * is an array rather than a tuple (callbacks spread from an array), its element type stands in for every step.
@@ -74,13 +79,13 @@ type ChainUntilNullishSteps<U extends Array<unknown>, T> =
 		: MarkThrown<T>;
 /**
  * The type which results from passing values of type `T` through the steps `U` and then returning those values
- * themselves rather than the result of the last step. `T` is not a step: if it is a promise, the steps run once it
+ * themselves rather than the result of the last step. `T` is not a step: if it is promise-like, the steps run once it
  * resolves, so the only effect they can have on it is that one which throws turns it into a promise which rejects.
  * Otherwise the steps make `T` asynchronous as they would any result.
  */
 type ChainReturningValue<U extends Array<unknown>, T> =
-	T extends Promise<any>
-		? [Extract<MarkThrownEach<U>[number], Thrown>] extends [never] ? T : Promise<never>
+	T extends PromiseLike<any>
+		? [Extract<MarkThrownEach<U>[number], Thrown>] extends [never] ? T : Rewrap<T, never>
 		: Chain<U, T>;
 type MarkThrownEach<U extends Array<unknown>> = { [K in keyof U]: MarkThrown<U[K]> };
 /**

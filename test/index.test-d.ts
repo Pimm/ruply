@@ -10,10 +10,14 @@ const aVoid = undefined as void;
 const aNumeralOrNullPromise = Promise.resolve<number | null>(1);
 const aNumeralPromiseOrNull = Promise.resolve(1) as Promise<number> | null;
 const aNumberOrNumeralPromise = 1 as number | Promise<number>;
+const aNumeralPromiseLike = Promise.resolve(1) as PromiseLike<number>;
+const aNumeralOrNullPromiseLike = Promise.resolve<number | null>(1) as PromiseLike<number | null>;
+const aNumeralQuery = Promise.resolve(1) as Pick<Promise<number>, 'then' | 'catch' | 'finally'>;
 const convertNumberToString = (value: number) => value.toString();
 const asyncConvertNumberToString = async (value: number) => value.toString();
 const increment = (value: number) => value + 1;
 const asyncIncrement = async (value: number) => value + 1;
+const promiseLikeIncrement = (value: number): PromiseLike<number> => Promise.resolve(value + 1);
 const returnNull = (value: number) => null;
 const asyncReturnNull = async (value: number) => null;
 const returnUndefined = (value: number) => undefined;
@@ -279,3 +283,23 @@ expectType<Promise<number> | Promise<null>>(runIf(aNumeralOrNullPromise, increme
 expectType<null>(runIf(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, returnNull, asyncConvertNumberToString));
 expectType<Promise<null>>(runIf(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, asyncReturnNull, asyncConvertNumberToString));
 expectType<Promise<never>>(runIf(aNumeralPromise, increment, increment, increment, increment, increment, increment, increment, increment, increment, throwError));
+// Promise-like values and callbacks: objects with a then method which are not promises.
+expectType<PromiseLike<string>>(run(aNumeralPromiseLike, convertNumberToString));
+expectType<PromiseLike<string> | PromiseLike<null>>(runIf(aNumeralOrNullPromiseLike, convertNumberToString));
+expectType<PromiseLike<number>>(apply(aNumeralPromiseLike, convertNumberToString));
+run(aNumeralPromiseLike, value => expectType<number>(value));
+runIf(aNumeralOrNullPromiseLike, value => expectType<number>(value));
+apply(aNumeralPromiseLike, value => expectType<number>(value));
+run(aNumber, promiseLikeIncrement, value => expectType<number>(value));
+expectType<PromiseLike<number>>(run(aNumber, promiseLikeIncrement));
+expectType<PromiseLike<string>>(run(aNumber, promiseLikeIncrement, convertNumberToString));
+expectType<PromiseLike<number>>(apply(aNumber, promiseLikeIncrement));
+expectType<PromiseLike<string> | PromiseLike<null>>(runIf(aNumeralOrNullPromiseLike, increment, convertNumberToString));
+expectType<PromiseLike<never>>(run(aNumeralPromiseLike, throwError));
+expectType<PromiseLike<null>>(runIf(aNumeralOrNullPromiseLike, throwError));
+// The first asynchronous step decides whether a promise or a promise-like is returned.
+expectType<Promise<string>>(run(aNumeralPromise, promiseLikeIncrement, convertNumberToString));
+expectType<PromiseLike<string>>(run(aNumeralPromiseLike, asyncIncrement, convertNumberToString));
+// Promise-like values whose then method returns promises (such as query builders) result in promises.
+expectType<Promise<string>>(run(aNumeralQuery, convertNumberToString));
+expectType<Promise<string> | Promise<null>>(runIf(aNumeralQuery, returnNumberOrNull, convertNumberToString));
