@@ -12,9 +12,9 @@ test('promises-chain', () => {
 			return expect(
 				run(2, increment, double, square)
 			).resolves.toBe(36)
-			.then(() => expect(increment).toBeCalledWith(2))
-			.then(() => expect(double).toBeCalledWith(3))
-			.then(() => expect(square).toBeCalledWith(6));
+			.then(() => expect(increment).toHaveBeenCalledWith(2))
+			.then(() => expect(double).toHaveBeenCalledWith(3))
+			.then(() => expect(square).toHaveBeenCalledWith(6));
 		}
 	);
 });
