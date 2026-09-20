@@ -1,5 +1,6 @@
 const path = require('path');
 const { babel } = require('@rollup/plugin-babel');
+const terser = require('@rollup/plugin-terser');
 
 const packageConfiguration = require('./package.json');
 
@@ -18,6 +19,7 @@ module.exports = {
 		}
 	],
 	plugins: [
-		babel({ comments: false, minified: true, babelHelpers: 'bundled' })
+		babel({ comments: false, babelHelpers: 'bundled' }),
+		terser()
 	]
 };
