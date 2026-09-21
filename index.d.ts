@@ -38,9 +38,10 @@ type TransferAsynchronicity<U, T> = T extends Promise<any> ? T : U extends Promi
  *
  * #### Promises
  *
- * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
- * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
- * If the promise rejects, the passed callback is skipped.
+ * If the first argument is a promise ‒ or, in a chain, a callback returns one ‒ the value to which that promise
+ * resolves is forwarded to the next callback instead of the promise itself. `run(promise, a)` is equivalent to
+ * `promise.then(value => run(value, a))`: a promise is returned, and an error thrown by a callback from then on
+ * rejects it instead of being thrown. If a promise rejects, the remaining callbacks are skipped.
  *
  * #### Chains
  *
@@ -69,9 +70,11 @@ declare function run<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(thi
  *
  * #### Promises
  *
- * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
- * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
- * If the value to which the promise resolves is null-ish or the promise rejects, the passed callback is skipped.
+ * If the first argument is a promise ‒ or, in a chain, a callback returns one ‒ the value to which that promise
+ * resolves is forwarded to the next callback instead of the promise itself. `runIf(promise, a)` is equivalent to
+ * `promise.then(value => runIf(value, a))`: a promise is returned, and an error thrown by a callback from then on
+ * rejects it instead of being thrown. If the value to which a promise resolves is null-ish or the promise rejects,
+ * the remaining callbacks are skipped.
  *
  * #### Chains
  *
@@ -115,9 +118,11 @@ declare function runIf<T, Z, Y, X, W, R, C>(this: C, value: T, ...callback: [(th
  * ```
  * #### Promises
  *
- * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
- * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
- * If the promise rejects, the passed callback is skipped.
+ * If the first argument is a promise, the value to which that promise resolves is forwarded to the callbacks instead of
+ * the promise itself. If a callback returns a promise, the next callback is not called until that promise resolves,
+ * and a promise is returned which resolves to the first argument. `apply(promise, a)` is equivalent to
+ * `promise.then(value => apply(value, a))`: a promise is returned, and an error thrown by a callback from then on
+ * rejects it instead of being thrown. If a promise rejects, the remaining callbacks are skipped.
  *
  * #### Chains
  *
