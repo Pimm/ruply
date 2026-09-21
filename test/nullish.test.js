@@ -28,6 +28,6 @@ test('nullish', () => {
 		if (nullish) {
 			expectancy = expectancy.not;
 		}
-		expectancy.toBeCalled();
+		expectancy.toHaveBeenCalled();
 	});
 });

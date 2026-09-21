@@ -12,7 +12,7 @@ test('promises-rejection', () => {
 			return expect(
 				run(Promise.reject(new Error('Could not get the number')), increment)
 			).rejects.toThrow('Could not get the number')
-			.then(() => expect(increment).not.toBeCalled());
+			.then(() => expect(increment).not.toHaveBeenCalled());
 		}
 	);
 });

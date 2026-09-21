@@ -15,59 +15,59 @@ test('basics', () => {
 		expect(
 			run('value', callback)
 		).toBe('result');
-		expect(callback).toBeCalledWith('value');
+		expect(callback).toHaveBeenCalledWith('value');
 	});
 	run(createCallback(), callback => {
 		expect(
 			runIf('value', callback)
 		).toBe('result');
-		expect(callback).toBeCalledWith('value');
+		expect(callback).toHaveBeenCalledWith('value');
 	});
 	// apply with non-null-ish argument.
 	run(createCallback(), callback => {
 		expect(
 			apply('value', callback)
 		).toBe('value');
-		expect(callback).toBeCalledWith('value');
+		expect(callback).toHaveBeenCalledWith('value');
 	});
 	// run[If] with null argument.
 	run(createCallback(), callback => {
 		expect(
 			run(null, callback)
 		).toBe('result');
-		expect(callback).toBeCalledWith(null);
+		expect(callback).toHaveBeenCalledWith(null);
 	});
 	run(createCallback(), callback => {
 		expect(
 			runIf(null, callback)
 		).toBe(null);
-		expect(callback).not.toBeCalled();
+		expect(callback).not.toHaveBeenCalled();
 	});
 	// apply with null argument.
 	run(createCallback(), callback => {
 		expect(
 			apply(null, callback)
 		).toBe(null);
-		expect(callback).toBeCalledWith(null);
+		expect(callback).toHaveBeenCalledWith(null);
 	});
 	// run[If] with undefined argument.
 	run(createCallback(), callback => {
 		expect(
 			run(undefined, callback)
 		).toBe('result');
-		expect(callback).toBeCalledWith(undefined);
+		expect(callback).toHaveBeenCalledWith(undefined);
 	});
 	run(createCallback(), callback => {
 		expect(
 			runIf(undefined, callback)
 		).toBe(undefined);
-		expect(callback).not.toBeCalled();
+		expect(callback).not.toHaveBeenCalled();
 	});
 	// apply with undefined argument.
 	run(createCallback(), callback => {
 		expect(
 			apply(undefined, callback)
 		).toBe(undefined);
-		expect(callback).toBeCalledWith(undefined);
+		expect(callback).toHaveBeenCalledWith(undefined);
 	});
 });
