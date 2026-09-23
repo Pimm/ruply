@@ -11,19 +11,37 @@ type Nullish = null | undefined;
  */
 type ExtractAsynchronous<T, U> = T extends PromiseLike<infer A> ? A extends U ? Promise<A> : never : T extends U ? T : never;
 /**
- * The states of a chain of callbacks: still synchronous, turned asynchronous, or ended because a step never produces
- * a value. A chain which is only sometimes asynchronous is in a union of states, over which everything below
- * distributes. The states are numbers rather than names, so that the table below is a tuple, which a consumer's
- * declaration file prints on one line where it would spell out an object over many; the aliases keep the names.
+ * `T` without promises which always reject (`Promise<never>`) if `T` or `E` includes other promises: a promise which
+ * always rejects adds nothing to a union which is asynchronous anyway, as any promise may reject. Inside a `runIf`
+ * chain, a step which is always null-ish and one which always throws both end the chain, and once the chain is
+ * asynchronous, both end it as a rejection; the former, though, has already contributed the promise of its null-ish
+ * value (in `E`, the exits of the chain), next to which the rejection is redundant. Applied to `runIf` only, whose
+ * own design puts the rejection there: one which a callback of `run` or `apply` itself may produce
+ * (`number | Promise<never>`) stays next to the other promises of the result, which costs precision but not
+ * soundness, and saves a consumer's declaration file spelling the result out three times.
+ */
+type DropRedundantRejection<T, E = never> = [Extract<T | E, PromiseLike<any>>] extends [PromiseLike<never>] ? T : Exclude<T, Promise<never>>;
+/**
+ * The states of a chain of callbacks: still synchronous, turned asynchronous, ended because a step never produces a
+ * value (a callback which always throws, or a step no value ever reaches), or ended in a rejection: the asynchronous
+ * form of that, once the chain has turned asynchronous (a step which never resolves is a rejection from the start). A
+ * chain which is only sometimes asynchronous is in a union of states, over which everything below distributes. The
+ * states are numbers rather than names, so that the table below is a tuple, which a consumer's declaration file
+ * prints on one line where it would spell out an object over many; the aliases keep the names.
  */
 type Sync = 0;
 type Promised = 1;
 type Ended = 2;
-type State = Sync | Promised | Ended;
+type Rejects = 3;
+type State = Sync | Promised | Ended | Rejects;
 /**
- * The state a chain enters through a single step which produces values of type `A`.
+ * The state a chain enters through a single step which produces values of type `A`: a promise which never resolves
+ * (`Promise<never>`, the result of an `async` callback which always throws) is a rejection.
  */
-type StepState<A> = [A] extends [never] ? Ended : A extends PromiseLike<any> ? Promised : Sync;
+type StepState<A> =
+	[A] extends [never] ? Ended
+	: A extends PromiseLike<infer X> ? ([X] extends [never] ? Rejects : Promised)
+	: Sync;
 /**
  * The state of a chain in state `S` after a step in state `K`, looked up in a table rather than decided by
  * conditions on `S`, so that `S` is mentioned only once: a consumer's declaration file spells these types out for
@@ -31,10 +49,11 @@ type StepState<A> = [A] extends [never] ? Ended : A extends PromiseLike<any> ? P
  * columns the step's.
  */
 type Next<S extends State, K extends State> = [
-	//             Sync      Promised  Ended   ← the step
-	/* Sync     */ [Sync    , Promised, Ended], // synchronous so far: the step decides
-	/* Promised */ [Promised, Promised, Ended], // a promise stays a promise; a step which never produces a value ends it
-	/* Ended    */ [Ended   , Ended   , Ended], // ended: stays ended
+	//             Sync      Promised  Ended     Rejects   ← the step
+	/* Sync     */ [Sync    , Promised, Ended   , Rejects], // synchronous so far: the step decides
+	/* Promised */ [Promised, Promised, Rejects , Rejects], // a promise stays a promise; a step which never produces a value rejects it
+	/* Ended    */ [Ended   , Ended   , Ended   , Ended  ], // ended: stays ended
+	/* Rejects  */ [Rejects , Rejects , Rejects , Rejects], // rejected: stays rejected
 ][S][K];
 /**
  * The state of a chain in state `S` after the steps `U`.
@@ -49,6 +68,7 @@ type Fold<U extends Array<unknown>, S extends State> =
 type Result<S extends State, R, A = Awaited<R>> =
 	S extends Promised ? Promise<A>
 	: S extends Ended ? never
+	: S extends Rejects ? Promise<never>
 	: R;
 /**
  * The step which stands in for callbacks spread from an array of type `U`: one which produces the return values of the
@@ -58,15 +78,17 @@ type Result<S extends State, R, A = Awaited<R>> =
 type ArrayStep<U extends Array<(...a: Array<any>) => any>> = [U[number]] extends [never] ? void : ReturnType<U[number]>;
 /**
  * The result of a chain which passes values through the steps `U` and ends with a step which produces values of type
- * `R`: `R` made asynchronous if any step is, `never` if a step never produces a value, and `R` itself otherwise.
+ * `R`: `R` made asynchronous if any step is, `never` if a step never produces a value while the chain is synchronous,
+ * a promise which rejects if that happens once it is asynchronous, and `R` itself otherwise.
  */
 type Chain<U extends Array<unknown>, R> = Result<Fold<U, Sync>, R>;
 /**
  * Like `Chain`, except that a null-ish value ends the chain: it becomes part of the result, and only non-null-ish values
  * are passed on to the next step. The exits of the chain (the null-ish values which end it) and its final result are
- * built separately, each from its own walk over the steps.
+ * built separately, each from its own walk over the steps. (A step which is always null-ish ends an asynchronous chain
+ * without a rejection next to its promise.)
  */
-type ChainUntilNullish<U extends Array<unknown>, R> = NullishExits<U, Sync> | Result<FoldNullish<U, Sync>, R>;
+type ChainUntilNullish<U extends Array<unknown>, R> = NullishExits<U, Sync> | DropRedundantRejection<Result<FoldNullish<U, Sync>, R>, NullishExits<U, Sync>>;
 /**
  * The exits of a `runIf` chain in state `S` through the steps `U`: what each step contributes to the result by ending
  * the chain with a null-ish value.
@@ -85,8 +107,8 @@ type FoldNullish<U extends Array<unknown>, S extends State> =
  */
 type NullishExit<S extends State, A> = [ExtractAsynchronous<A, Nullish>] extends [never] ? never : ExitResult<S, ExtractAsynchronous<A, Nullish>>;
 /**
- * `Result`, for the exit of a `runIf` chain: a chain which has ended contributes no exit, as its result already is
- * nothing.
+ * `Result`, for the exit of a `runIf` chain: a chain which has ended contributes no exit, as its result already is the
+ * rejection (or nothing) the exit would be.
  */
 type ExitResult<S extends State, R, A = Awaited<R>> =
 	S extends Promised ? Promise<A>
@@ -94,12 +116,23 @@ type ExitResult<S extends State, R, A = Awaited<R>> =
 	: never;
 /**
  * `StepState`, for a step of a `runIf` chain, read straight off the step's values: a step which only produces null-ish
- * values ends the chain, and the null-ish values of one which sometimes does are not what the chain continues with.
+ * values ends the chain, and the null-ish values of one which sometimes does are not what the chain continues with. A
+ * promise which always resolves to null-ish values counts as a rejection: it ends the chain either way, and in the
+ * result, the rejection is redundant next to the promise of the null-ish value that step contributes, and dropped.
  */
 type NullishStepState<A> =
 	[Exclude<A, Nullish>] extends [never] ? Ended
-	: A extends PromiseLike<infer X> ? ([Exclude<X, Nullish>] extends [never] ? Ended : Promised)
+	: A extends PromiseLike<infer X> ? ([Exclude<X, Nullish>] extends [never] ? Rejects : Promised)
 	: A extends Nullish ? never : Sync;
+/**
+ * The result of passing values of type `T` through the steps `U` and then returning those values themselves rather
+ * than the result of the last step. `T` is not a step: if it is a promise, the steps run once it resolves, so the only
+ * effect they can have on it is that one which never produces a value turns it into a promise which rejects. Otherwise
+ * the steps make `T` asynchronous as they would any result.
+ */
+type ChainReturningValue<U extends Array<unknown>, T> = ChainReturningValueIn<Fold<U, Sync>, T>;
+type ChainReturningValueIn<S extends State, T> =
+	T extends PromiseLike<any> ? (S extends Ended | Rejects ? Promise<never> : T) : Result<S, T>;
 /**
  * Calls the passed callback, forwarding the first argument and routing back whatever is returned.
  *
@@ -184,15 +217,15 @@ declare function runIf<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(t
  * `apply(apply(x, a), b)`.
  */
 declare function apply<T, Z, C>(this: C, value: T, callback: (this: C, value: Awaited<T>) => Z):
-	Chain<[Z], T>;
+	ChainReturningValue<[Z], T>;
 declare function apply<T, Z, Y, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<T>) => Y]):
-	Chain<[Z, Y], T>;
+	ChainReturningValue<[Z, Y], T>;
 declare function apply<T, Z, Y, X, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<T>) => Y, (this: C, value: Awaited<T>) => X]):
-	Chain<[Z, Y, X], T>;
+	ChainReturningValue<[Z, Y, X], T>;
 declare function apply<T, Z, Y, X, W, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<T>) => Y, (this: C, value: Awaited<T>) => X, (this: C, value: Awaited<T>) => W]):
-	Chain<[Z, Y, X, W], T>;
+	ChainReturningValue<[Z, Y, X, W], T>;
 declare function apply<T, Z, Y, X, W, V, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<T>) => Y, (this: C, value: Awaited<T>) => X, (this: C, value: Awaited<T>) => W, (this: C, value: Awaited<T>) => V]):
-	Chain<[Z, Y, X, W, V], T>;
+	ChainReturningValue<[Z, Y, X, W, V], T>;
 // ↓ Callbacks spread from an array, possibly around fixed callbacks. The spread array is typed as a whole and its
 // element type stands in for every step it contributes, so that an array holding callbacks of several types (two
 // spread arrays, say) counts as possibly asynchronous. Only one fixed callback on either side of the spread is told
@@ -200,13 +233,13 @@ declare function apply<T, Z, Y, X, W, V, C>(this: C, value: T, ...callbacks: [(t
 // callback before a spread is a parameter of its own rather than part of the tuple, so that a generic array forwarded
 // after it keeps its type instead of being inferred from its constraint.)
 declare function apply<T, Z, U extends Array<(this: C, value: Awaited<T>) => any>, X, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, ...U, (this: C, value: Awaited<T>) => X]):
-	Chain<[Z, ArrayStep<U>, X], T>;
+	ChainReturningValue<[Z, ArrayStep<U>, X], T>;
 declare function apply<T, Z, U extends Array<(this: C, value: Awaited<T>) => any>, C>(this: C, value: T, callback: (this: C, value: Awaited<T>) => Z, ...callbacks: U):
-	Chain<[Z, ArrayStep<U>], T>;
+	ChainReturningValue<[Z, ArrayStep<U>], T>;
 declare function apply<T, U extends Array<(this: C, value: Awaited<T>) => any>, Y, C>(this: C, value: T, ...callbacks: [...U, (this: C, value: Awaited<T>) => Y]):
-	Chain<[ArrayStep<U>, Y], T>;
+	ChainReturningValue<[ArrayStep<U>, Y], T>;
 declare function apply<T, U extends Array<(this: C, value: Awaited<T>) => any>, C>(this: C, value: T, ...callbacks: U):
-	Chain<[ArrayStep<U>], T>;
+	ChainReturningValue<[ArrayStep<U>], T>;
 
 export {
 	run, runIf,

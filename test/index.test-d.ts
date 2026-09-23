@@ -19,6 +19,7 @@ const returnNumberOrNull = (value: number) => value > 0 ? value : null;
 const asyncReturnNumberOrNull = async (value: number) => value > 0 ? value : null;
 const maybeAsyncIncrement = (value: number) => value > 0 ? value + 1 : Promise.resolve(value + 1);
 const getLength = (value: string) => value.length;
+const throwError = (value: number) => { throw new Error(); };
 const aNumeralPromiseLike = Promise.resolve(1) as PromiseLike<number>;
 const promiseLikeIncrement = (value: number): PromiseLike<number> => Promise.resolve(value + 1);
 const doNothing = (value: number) => {};
@@ -122,6 +123,51 @@ expectType<Promise<null>>(runIf(aNumber, asyncReturnNull, asyncConvertNumberToSt
 expectType<null>(runIf(aNumber, increment, returnNull, increment, asyncConvertNumberToString));
 // runIf with a callback which can be reached, because a preceding step is only sometimes null-ish.
 expectType<Promise<string> | null>(runIf(aNumber, returnNumberOrNull, asyncConvertNumberToString));
+// Callbacks which always throw: the error is thrown if the chain is synchronous up to that point, and rejects the
+// returned promise if it is asynchronous. Subsequent callbacks are skipped.
+expectType<never>(run(aNumber, throwError));
+expectType<never>(run(aNumber, increment, throwError, increment));
+expectType<never>(run(aNumber, throwError, asyncIncrement));
+expectType<Promise<never>>(run(aNumeralPromise, throwError));
+expectType<Promise<never>>(run(aNumeralPromise, increment, throwError));
+expectType<Promise<never>>(run(aNumber, asyncIncrement, throwError));
+expectType<Promise<never>>(run(aNumber, asyncIncrement, throwError, asyncIncrement));
+expectType<Promise<never>>(run(aNumberOrNumeralPromise, throwError));
+expectType<never>(runIf(aNumber, throwError));
+expectType<never>(runIf(aNumber, throwError, asyncConvertNumberToString));
+expectType<null>(runIf(aNumberOrNull, throwError));
+expectType<null>(runIf(aNumberOrNull, throwError, convertNumberToString));
+expectType<Promise<never>>(runIf(aNumeralPromise, throwError));
+expectType<Promise<never>>(runIf(aNumber, asyncIncrement, throwError));
+expectType<Promise<never>>(runIf(aNumeralPromise, throwError, asyncConvertNumberToString));
+expectType<Promise<never>>(runIf(aNumeralPromise, throwError, returnNull, increment)); // (not even a null-ish step contributes)
+expectType<Promise<never> | null>(runIf(aNumeralPromiseOrNull, throwError));
+expectType<Promise<null>>(runIf(aNumeralOrNullPromise, throwError));
+expectType<never>(apply(aNumber, throwError));
+expectType<never>(apply(aNumber, increment, throwError));
+expectType<never>(apply(aNumber, throwError, asyncIncrement));
+expectType<Promise<never>>(apply(aNumeralPromise, throwError));
+expectType<Promise<never>>(apply(aNumber, asyncIncrement, throwError));
+expectType<Promise<never>>(apply(aNumberOrNumeralPromise, throwError));
+// Callbacks which always throw asynchronously (typed Promise<never>) reject the chain, like a throw after an
+// asynchronous step does.
+const asyncThrowError = async (value: number): Promise<never> => { throw new Error(); };
+expectType<Promise<never>>(run(aNumber, asyncThrowError));
+expectType<Promise<never>>(run(aNumber, asyncThrowError, increment));
+expectType<Promise<never>>(run(aNumeralPromise, increment, asyncThrowError));
+expectType<Promise<never>>(run(aNumeralPromise, asyncThrowError, asyncIncrement, increment));
+expectType<Promise<never>>(runIf(aNumber, asyncThrowError, increment));
+expectType<Promise<never> | null>(runIf(aNumberOrNull, asyncThrowError, increment));
+expectType<Promise<never>>(apply(aNumber, asyncThrowError, increment));
+expectType<Promise<never>>(apply(aNumeralPromise, asyncThrowError));
+// A value which never resolves passes through as a rejection.
+declare const aNeverPromise: Promise<never>;
+expectType<Promise<never>>(run(aNeverPromise, increment));
+expectType<Promise<never>>(runIf(aNeverPromise, increment));
+expectType<Promise<never>>(apply(aNeverPromise, increment));
+// A callback which only sometimes throws asynchronously keeps both outcomes.
+const asyncThrowErrorSometimes = (value: number) => value > 0 ? value : Promise.reject<never>(new Error());
+expectType<number | Promise<never>>(run(aNumber, asyncThrowErrorSometimes, increment));
 // Values and callbacks which are only sometimes asynchronous.
 expectType<string | Promise<string>>(run(aNumberOrNumeralPromise, convertNumberToString));
 expectType<string | Promise<string>>(runIf(aNumberOrNumeralPromise, convertNumberToString));
@@ -153,6 +199,27 @@ expectError(runIf(aNumber, getLength));
 expectError(runIf(aNumber, increment, getLength));
 expectError(apply(aNumber, getLength));
 expectError(apply(aNumber, increment, getLength));
+// The type of the value is inferred from the context of the call, such as the left operand of ??.
+declare class Dictionary<T> {
+	get(id: string): T | undefined;
+	set(id: string, value: T): void;
+}
+declare const dictionaries: Dictionary<Dictionary<string>>;
+const dictionary = dictionaries.get('a') ?? apply(new Dictionary(), dictionary => dictionaries.set('a', dictionary));
+expectType<Dictionary<string>>(dictionary);
+const dictionaryAppliedTwice = dictionaries.get('a') ?? apply(new Dictionary(), dictionary => dictionaries.set('a', dictionary), dictionary => dictionaries.set('b', dictionary));
+expectType<Dictionary<string>>(dictionaryAppliedTwice);
+// A value of a generic type comes back as that type.
+const passThrough = <R>(value: Exclude<R, Promise<unknown>>): R => apply(value, () => {});
+const passThroughTwice = <R>(value: Exclude<R, Promise<unknown>>): R => apply(value, () => {}, () => {});
+// Generic wrappers: a promise whose type is a type parameter comes back as that type.
+const forwardPromise = <T>(promise: Promise<T>): Promise<T> => run(promise, value => value);
+const mapPromise = <T, R>(promise: Promise<T>, callback: (value: T) => R): Promise<R> => run(promise, callback);
+const forwardNullablePromise = <T>(promise: Promise<T | null>): Promise<T | null> => runIf(promise, value => value);
+const applyToPromise = <T>(promise: Promise<T>): Promise<T> => apply(promise, () => {});
+// A generic value with an asynchronous callback: the result is a promise, though a deferred one which an async
+// function has to await before returning it.
+const awaitedInWrapper = async <T>(value: T): Promise<number> => await run(value, async () => 1);
 // Callbacks are called with the context in which run[If] or apply is called.
 const context = { factor: 2, run, runIf, apply };
 expectType<number>(context.run(aNumber, function (value) {
