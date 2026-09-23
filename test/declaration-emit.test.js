@@ -54,10 +54,10 @@ test('declaration-emit', () => {
 			return apply(value, () => {});
 		}
 		export function wrapLongRun<T>(value: T) {
-			return run(value, value => value, value => value, value => value, value => value, value => value);
+			return run(value, value => value, value => value, value => value, value => value, value => value, value => value, value => value, value => value, value => value, value => value);
 		}
 		export function wrapLongRunIf<T>(value: T) {
-			return runIf(value, value => value, value => value, value => value, value => value, value => value);
+			return runIf(value, value => value, value => value, value => value, value => value, value => value, value => value, value => value, value => value, value => value, value => value);
 		}
 		declare const value: number;
 		export function forwardCallbacks<U extends Array<(value: number) => any>>(...callbacks: U) {

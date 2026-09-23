@@ -178,6 +178,7 @@ type ChainReturningValueIn<S extends State, T> =
  * #### Chains
  *
  * If multiple callbacks are passed, they are called subsequently. `run(x, a, b)` is equivalent to `run(run(x, a), b)`.
+ * Up to ten callbacks are typed; nest calls for longer chains.
  */
 declare function run<T, R, C>(this: C, value: T, callback: (this: C, value: Awaited<T>) => R):
 	Chain<[T], R>;
@@ -189,6 +190,16 @@ declare function run<T, Z, Y, X, R, C>(this: C, value: T, ...callbacks: [(this: 
 	Chain<[T, Z, Y, X], R>;
 declare function run<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<Z>) => Y, (this: C, value: Awaited<Y>) => X, (this: C, value: Awaited<X>) => W, (this: C, value: Awaited<W>) => R]):
 	Chain<[T, Z, Y, X, W], R>;
+declare function run<T, Z, Y, X, W, V, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<Z>) => Y, (this: C, value: Awaited<Y>) => X, (this: C, value: Awaited<X>) => W, (this: C, value: Awaited<W>) => V, (this: C, value: Awaited<V>) => R]):
+	Chain<[T, Z, Y, X, W, V], R>;
+declare function run<T, Z, Y, X, W, V, U, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<Z>) => Y, (this: C, value: Awaited<Y>) => X, (this: C, value: Awaited<X>) => W, (this: C, value: Awaited<W>) => V, (this: C, value: Awaited<V>) => U, (this: C, value: Awaited<U>) => R]):
+	Chain<[T, Z, Y, X, W, V, U], R>;
+declare function run<T, Z, Y, X, W, V, U, S, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<Z>) => Y, (this: C, value: Awaited<Y>) => X, (this: C, value: Awaited<X>) => W, (this: C, value: Awaited<W>) => V, (this: C, value: Awaited<V>) => U, (this: C, value: Awaited<U>) => S, (this: C, value: Awaited<S>) => R]):
+	Chain<[T, Z, Y, X, W, V, U, S], R>;
+declare function run<T, Z, Y, X, W, V, U, S, Q, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<Z>) => Y, (this: C, value: Awaited<Y>) => X, (this: C, value: Awaited<X>) => W, (this: C, value: Awaited<W>) => V, (this: C, value: Awaited<V>) => U, (this: C, value: Awaited<U>) => S, (this: C, value: Awaited<S>) => Q, (this: C, value: Awaited<Q>) => R]):
+	Chain<[T, Z, Y, X, W, V, U, S, Q], R>;
+declare function run<T, Z, Y, X, W, V, U, S, Q, P, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<Z>) => Y, (this: C, value: Awaited<Y>) => X, (this: C, value: Awaited<X>) => W, (this: C, value: Awaited<W>) => V, (this: C, value: Awaited<V>) => U, (this: C, value: Awaited<U>) => S, (this: C, value: Awaited<S>) => Q, (this: C, value: Awaited<Q>) => P, (this: C, value: Awaited<P>) => R]):
+	Chain<[T, Z, Y, X, W, V, U, S, Q, P], R>;
 /**
  * Calls the passed callback ‒ forwarding the argument and routing back whatever is returned ‒ if the first argument is
  * not null-ish. If the first argument is null-ish, it is returned directly and the passed callback is skipped.
@@ -212,6 +223,7 @@ declare function run<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(thi
  *
  * If multiple callbacks are passed, they are called subsequently—respecting the logic regarding null-ish values.
  * `runIf(x, a, b)` is equivalent to `runIf(runIf(x, a), b)`
+ * Up to ten callbacks are typed; nest calls for longer chains.
  */
 declare function runIf<T, R, C>(this: C, value: T, callback: (this: C, value: Exclude<Awaited<T>, Nullish>) => R):
 	ChainUntilNullish<[T], R>;
@@ -223,6 +235,16 @@ declare function runIf<T, Z, Y, X, R, C>(this: C, value: T, ...callbacks: [(this
 	ChainUntilNullish<[T, Z, Y, X], R>;
 declare function runIf<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Awaited<T>, Nullish>) => Z, (this: C, value: Exclude<Awaited<Z>, Nullish>) => Y, (this: C, value: Exclude<Awaited<Y>, Nullish>) => X, (this: C, value: Exclude<Awaited<X>, Nullish>) => W, (this: C, value: Exclude<Awaited<W>, Nullish>) => R]):
 	ChainUntilNullish<[T, Z, Y, X, W], R>;
+declare function runIf<T, Z, Y, X, W, V, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Awaited<T>, Nullish>) => Z, (this: C, value: Exclude<Awaited<Z>, Nullish>) => Y, (this: C, value: Exclude<Awaited<Y>, Nullish>) => X, (this: C, value: Exclude<Awaited<X>, Nullish>) => W, (this: C, value: Exclude<Awaited<W>, Nullish>) => V, (this: C, value: Exclude<Awaited<V>, Nullish>) => R]):
+	ChainUntilNullish<[T, Z, Y, X, W, V], R>;
+declare function runIf<T, Z, Y, X, W, V, U, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Awaited<T>, Nullish>) => Z, (this: C, value: Exclude<Awaited<Z>, Nullish>) => Y, (this: C, value: Exclude<Awaited<Y>, Nullish>) => X, (this: C, value: Exclude<Awaited<X>, Nullish>) => W, (this: C, value: Exclude<Awaited<W>, Nullish>) => V, (this: C, value: Exclude<Awaited<V>, Nullish>) => U, (this: C, value: Exclude<Awaited<U>, Nullish>) => R]):
+	ChainUntilNullish<[T, Z, Y, X, W, V, U], R>;
+declare function runIf<T, Z, Y, X, W, V, U, S, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Awaited<T>, Nullish>) => Z, (this: C, value: Exclude<Awaited<Z>, Nullish>) => Y, (this: C, value: Exclude<Awaited<Y>, Nullish>) => X, (this: C, value: Exclude<Awaited<X>, Nullish>) => W, (this: C, value: Exclude<Awaited<W>, Nullish>) => V, (this: C, value: Exclude<Awaited<V>, Nullish>) => U, (this: C, value: Exclude<Awaited<U>, Nullish>) => S, (this: C, value: Exclude<Awaited<S>, Nullish>) => R]):
+	ChainUntilNullish<[T, Z, Y, X, W, V, U, S], R>;
+declare function runIf<T, Z, Y, X, W, V, U, S, Q, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Awaited<T>, Nullish>) => Z, (this: C, value: Exclude<Awaited<Z>, Nullish>) => Y, (this: C, value: Exclude<Awaited<Y>, Nullish>) => X, (this: C, value: Exclude<Awaited<X>, Nullish>) => W, (this: C, value: Exclude<Awaited<W>, Nullish>) => V, (this: C, value: Exclude<Awaited<V>, Nullish>) => U, (this: C, value: Exclude<Awaited<U>, Nullish>) => S, (this: C, value: Exclude<Awaited<S>, Nullish>) => Q, (this: C, value: Exclude<Awaited<Q>, Nullish>) => R]):
+	ChainUntilNullish<[T, Z, Y, X, W, V, U, S, Q], R>;
+declare function runIf<T, Z, Y, X, W, V, U, S, Q, P, R, C>(this: C, value: T, ...callbacks: [(this: C, value: Exclude<Awaited<T>, Nullish>) => Z, (this: C, value: Exclude<Awaited<Z>, Nullish>) => Y, (this: C, value: Exclude<Awaited<Y>, Nullish>) => X, (this: C, value: Exclude<Awaited<X>, Nullish>) => W, (this: C, value: Exclude<Awaited<W>, Nullish>) => V, (this: C, value: Exclude<Awaited<V>, Nullish>) => U, (this: C, value: Exclude<Awaited<U>, Nullish>) => S, (this: C, value: Exclude<Awaited<S>, Nullish>) => Q, (this: C, value: Exclude<Awaited<Q>, Nullish>) => P, (this: C, value: Exclude<Awaited<P>, Nullish>) => R]):
+	ChainUntilNullish<[T, Z, Y, X, W, V, U, S, Q, P], R>;
 /**
  * Calls the passed callback, forwarding the first argument and returning that argument afterwards.
  *
@@ -256,6 +278,16 @@ declare function apply<T, Z, Y, X, W, C>(this: C, value: T, ...callbacks: [(this
 	ChainReturningValue<[Z, Y, X, W], T>;
 declare function apply<T, Z, Y, X, W, V, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<T>) => Y, (this: C, value: Awaited<T>) => X, (this: C, value: Awaited<T>) => W, (this: C, value: Awaited<T>) => V]):
 	ChainReturningValue<[Z, Y, X, W, V], T>;
+declare function apply<T, Z, Y, X, W, V, U, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<T>) => Y, (this: C, value: Awaited<T>) => X, (this: C, value: Awaited<T>) => W, (this: C, value: Awaited<T>) => V, (this: C, value: Awaited<T>) => U]):
+	ChainReturningValue<[Z, Y, X, W, V, U], T>;
+declare function apply<T, Z, Y, X, W, V, U, S, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<T>) => Y, (this: C, value: Awaited<T>) => X, (this: C, value: Awaited<T>) => W, (this: C, value: Awaited<T>) => V, (this: C, value: Awaited<T>) => U, (this: C, value: Awaited<T>) => S]):
+	ChainReturningValue<[Z, Y, X, W, V, U, S], T>;
+declare function apply<T, Z, Y, X, W, V, U, S, Q, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<T>) => Y, (this: C, value: Awaited<T>) => X, (this: C, value: Awaited<T>) => W, (this: C, value: Awaited<T>) => V, (this: C, value: Awaited<T>) => U, (this: C, value: Awaited<T>) => S, (this: C, value: Awaited<T>) => Q]):
+	ChainReturningValue<[Z, Y, X, W, V, U, S, Q], T>;
+declare function apply<T, Z, Y, X, W, V, U, S, Q, P, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<T>) => Y, (this: C, value: Awaited<T>) => X, (this: C, value: Awaited<T>) => W, (this: C, value: Awaited<T>) => V, (this: C, value: Awaited<T>) => U, (this: C, value: Awaited<T>) => S, (this: C, value: Awaited<T>) => Q, (this: C, value: Awaited<T>) => P]):
+	ChainReturningValue<[Z, Y, X, W, V, U, S, Q, P], T>;
+declare function apply<T, Z, Y, X, W, V, U, S, Q, P, O, C>(this: C, value: T, ...callbacks: [(this: C, value: Awaited<T>) => Z, (this: C, value: Awaited<T>) => Y, (this: C, value: Awaited<T>) => X, (this: C, value: Awaited<T>) => W, (this: C, value: Awaited<T>) => V, (this: C, value: Awaited<T>) => U, (this: C, value: Awaited<T>) => S, (this: C, value: Awaited<T>) => Q, (this: C, value: Awaited<T>) => P, (this: C, value: Awaited<T>) => O]):
+	ChainReturningValue<[Z, Y, X, W, V, U, S, Q, P, O], T>;
 // ↓ Callbacks spread from an array, possibly around fixed callbacks. The spread array is typed as a whole and its
 // element type stands in for every step it contributes, so that an array holding callbacks of several types (two
 // spread arrays, say) counts as possibly asynchronous. Only one fixed callback on either side of the spread is told

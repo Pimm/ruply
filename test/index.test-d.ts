@@ -385,3 +385,26 @@ expectType<number>(context.apply(aNumber, increment, function (value) {
 expectType<number>(context.apply(aNumber, function (value) {
 	expectType<typeof context>(this);
 }, ...syncCallbacks));
+// Chains of ten callbacks with changing types, asynchronous steps, null-ish values and errors.
+expectType<number>(run(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, convertNumberToString, getLength));
+expectType<Promise<number>>(run(aNumber, increment, increment, increment, increment, asyncIncrement, increment, increment, increment, convertNumberToString, getLength));
+expectType<Promise<string>>(run(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, asyncIncrement, convertNumberToString));
+expectType<Array<string>>(run(aNumber, value => value + 1, value => `${value}`, value => value.length, value => [value], ([value]) => value, value => value > 1, value => value ? 1 : 0, value => value.toString(), value => value.length, value => [value.toString()]));
+expectType<Promise<never>>(run(aNumber, asyncIncrement, increment, increment, increment, increment, increment, increment, increment, increment, throwError));
+expectType<number | null>(runIf(aNumberOrNull, increment, increment, increment, increment, increment, increment, increment, increment, convertNumberToString, getLength));
+expectType<Promise<number> | Promise<null>>(runIf(aNumeralOrNullPromise, increment, increment, increment, increment, increment, increment, increment, increment, convertNumberToString, getLength));
+expectType<null>(runIf(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, returnNull, asyncConvertNumberToString));
+expectType<Promise<null>>(runIf(aNumber, increment, increment, increment, increment, increment, increment, increment, increment, asyncReturnNull, asyncConvertNumberToString));
+expectType<Promise<never>>(runIf(aNumeralPromise, increment, increment, increment, increment, increment, increment, increment, increment, increment, throwError));
+// apply with ten callbacks is typed by its fixed overload, which tells the asynchronous callback apart from the others.
+expectType<Promise<number>>(apply(aNumber, doNothing, doNothing, doNothing, doNothing, asyncDoNothing, doNothing, doNothing, doNothing, doNothing, doNothing));
+// Chains of six to nine callbacks which change the type at every step: each overload is a declaration of its own, and
+// this checks that each callback of it is wired to the one before it.
+expectType<number>(run(aNumber, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength));
+expectType<string>(run(aNumber, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString));
+expectType<number>(run(aNumber, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength));
+expectType<string>(run(aNumber, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString));
+expectType<number | null>(runIf(aNumberOrNull, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength));
+expectType<string | null>(runIf(aNumberOrNull, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString));
+expectType<number | null>(runIf(aNumberOrNull, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength));
+expectType<string | null>(runIf(aNumberOrNull, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString));
