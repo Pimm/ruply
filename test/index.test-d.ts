@@ -5,6 +5,8 @@ const aNumber: number = 1;
 const aNumeralPromise = Promise.resolve(1);
 const aNumberOrNull = 1 as number | null;
 const aNumberOrUndefined = 1 as number | undefined;
+const aNumberOrVoid = 1 as number | void;
+const aVoid = undefined as void;
 const aNumeralOrNullPromise = Promise.resolve<number | null>(1);
 const aNumeralPromiseOrNull = Promise.resolve(1) as Promise<number> | null;
 const aNumberOrNumeralPromise = 1 as number | Promise<number>;
@@ -19,10 +21,11 @@ const returnNumberOrNull = (value: number) => value > 0 ? value : null;
 const asyncReturnNumberOrNull = async (value: number) => value > 0 ? value : null;
 const maybeAsyncIncrement = (value: number) => value > 0 ? value + 1 : Promise.resolve(value + 1);
 const getLength = (value: string) => value.length;
-const throwError = (value: number) => { throw new Error(); };
 const aNumeralPromiseLike = Promise.resolve(1) as PromiseLike<number>;
 const promiseLikeIncrement = (value: number): PromiseLike<number> => Promise.resolve(value + 1);
 const doNothing = (value: number) => {};
+const asyncDoNothing = async (value: number) => {};
+const throwError = (value: number) => { throw new Error(); };
 // run with one callback.
 expectType<string>(run(aNumber, convertNumberToString));
 expectType<Promise<string>>(run(aNumeralPromise, convertNumberToString));
@@ -108,6 +111,26 @@ expectType<Promise<number>>(apply(aNumber, increment, increment, asyncIncrement)
 expectType<string | undefined>(runIf(aNumberOrUndefined, convertNumberToString));
 expectType<string | undefined>(runIf(aNumberOrUndefined, increment, convertNumberToString));
 expectType<undefined>(runIf(aNumber, returnUndefined, convertNumberToString));
+// runIf with void (the result of callbacks without a return value), which is undefined at runtime and ends the chain.
+expectType<void>(runIf(aNumber, doNothing));
+expectType<void>(runIf(aNumber, doNothing, convertNumberToString));
+expectType<void>(runIf(aNumber, doNothing, (value: number) => value.toString()));
+expectType<void | null>(runIf(aNumberOrNull, doNothing, convertNumberToString));
+expectType<Promise<void>>(runIf(aNumber, asyncDoNothing, convertNumberToString));
+expectType<Promise<void>>(runIf(aNumeralPromise, doNothing, convertNumberToString));
+expectType<string | void>(runIf(aNumberOrVoid, convertNumberToString));
+expectType<void>(runIf(aVoid, convertNumberToString));
+// run passes void on like any other value.
+run(aNumber, doNothing, value => expectType<void>(value));
+// void mixed into a callback result, and void inside a promise.
+const returnNumberOrVoid = (value: number): number | void => value > 0 ? value : undefined;
+const asyncReturnNumberOrVoid = async (value: number): Promise<number | void> => value > 0 ? value : undefined;
+const aVoidPromise = Promise.resolve() as Promise<void>;
+const aNumberOrVoidPromise = Promise.resolve<number | void>(1);
+expectType<string | void>(runIf(aNumber, returnNumberOrVoid, convertNumberToString));
+expectType<Promise<string> | Promise<void>>(runIf(aNumber, asyncReturnNumberOrVoid, convertNumberToString));
+expectType<Promise<void>>(runIf(aVoidPromise, increment));
+expectType<Promise<string> | Promise<void>>(runIf(aNumberOrVoidPromise, convertNumberToString));
 // runIf with a callback which returns null only sometimes.
 expectType<string | null>(runIf(aNumber, returnNumberOrNull, convertNumberToString));
 expectType<Promise<string> | Promise<null>>(runIf(aNumber, asyncReturnNumberOrNull, convertNumberToString));

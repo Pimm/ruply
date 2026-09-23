@@ -1,4 +1,7 @@
-type Nullish = null | undefined;
+/**
+ * The types which count as null-ish. Includes `void`, as a function without a return value results in `undefined`.
+ */
+type Nullish = null | undefined | void;
 /**
  * Like `Extract` except that if `T` is a promise, the extraction logic is applied to the type of the values to which
  * the promise resolves instead of to `T` directly.
