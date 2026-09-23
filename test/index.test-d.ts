@@ -19,6 +19,9 @@ const returnNumberOrNull = (value: number) => value > 0 ? value : null;
 const asyncReturnNumberOrNull = async (value: number) => value > 0 ? value : null;
 const maybeAsyncIncrement = (value: number) => value > 0 ? value + 1 : Promise.resolve(value + 1);
 const getLength = (value: string) => value.length;
+const aNumeralPromiseLike = Promise.resolve(1) as PromiseLike<number>;
+const promiseLikeIncrement = (value: number): PromiseLike<number> => Promise.resolve(value + 1);
+const doNothing = (value: number) => {};
 // run with one callback.
 expectType<string>(run(aNumber, convertNumberToString));
 expectType<Promise<string>>(run(aNumeralPromise, convertNumberToString));
@@ -108,12 +111,33 @@ expectType<undefined>(runIf(aNumber, returnUndefined, convertNumberToString));
 expectType<string | null>(runIf(aNumber, returnNumberOrNull, convertNumberToString));
 expectType<Promise<string> | Promise<null>>(runIf(aNumber, asyncReturnNumberOrNull, convertNumberToString));
 expectType<Promise<string> | Promise<null>>(runIf(aNumeralPromise, returnNumberOrNull, convertNumberToString));
+// runIf with a callback which can never be reached, because a preceding step is always null-ish.
+expectType<null>(runIf(null, asyncConvertNumberToString));
+expectType<undefined>(runIf(undefined, asyncConvertNumberToString));
+expectType<null>(runIf(aNumber, returnNull, asyncConvertNumberToString));
+expectType<undefined>(runIf(aNumber, returnUndefined, asyncConvertNumberToString));
+expectType<null>(runIf(aNumberOrNull, returnNull, asyncConvertNumberToString));
+expectType<Promise<null>>(runIf(aNumeralPromise, returnNull, asyncConvertNumberToString));
+expectType<Promise<null>>(runIf(aNumber, asyncReturnNull, asyncConvertNumberToString));
+expectType<null>(runIf(aNumber, increment, returnNull, increment, asyncConvertNumberToString));
+// runIf with a callback which can be reached, because a preceding step is only sometimes null-ish.
+expectType<Promise<string> | null>(runIf(aNumber, returnNumberOrNull, asyncConvertNumberToString));
 // Values and callbacks which are only sometimes asynchronous.
 expectType<string | Promise<string>>(run(aNumberOrNumeralPromise, convertNumberToString));
 expectType<string | Promise<string>>(runIf(aNumberOrNumeralPromise, convertNumberToString));
 expectType<number | Promise<number>>(apply(aNumberOrNumeralPromise, convertNumberToString));
 expectType<string | Promise<string>>(run(aNumber, maybeAsyncIncrement, convertNumberToString));
 expectType<string | Promise<string>>(runIf(aNumber, maybeAsyncIncrement, convertNumberToString));
+// Any object with a then method counts as a promise: the callback receives the value it resolves to, and the chain is
+// asynchronous from then on, so its result can never pass for a synchronous one.
+run(aNumeralPromiseLike, value => expectType<number>(value));
+run(aNumber, promiseLikeIncrement, value => expectType<number>(value));
+expectError((): string => run(aNumeralPromiseLike, convertNumberToString));
+expectError((): number => run(aNumber, promiseLikeIncrement));
+expectError((): number => apply(aNumber, promiseLikeIncrement));
+expectError((): string | null => runIf(aNumeralPromiseLike, convertNumberToString));
+// A promise made of a value which is only sometimes a promise is one promise, not two.
+expectType<Promise<number>>(run(aNumberOrNumeralPromise, asyncIncrement));
 // Callbacks receive the (resolved, non-null-ish) value without the need for annotations.
 run(aNumeralPromise, value => expectType<number>(value));
 run(aNumber, asyncIncrement, value => expectType<number>(value));
@@ -170,3 +194,66 @@ context.runIf(aNumberOrNull,
 	function (value) { expectType<Array<string>>(value); expectType<typeof context>(this); return value.length; },
 	function (value) { expectType<number>(value); expectType<typeof context>(this); return value * this.factor; }
 );
+// run and runIf with callbacks which change the type of the value.
+expectType<number>(run(aNumber, convertNumberToString, getLength));
+expectType<string>(run(aNumber, convertNumberToString, getLength, convertNumberToString));
+expectType<number>(run(aNumber, value => `${value}`, value => value.length));
+expectType<Promise<number>>(run(aNumeralPromise, convertNumberToString, getLength));
+expectType<Promise<number>>(run(aNumber, asyncConvertNumberToString, getLength));
+expectType<number>(runIf(aNumber, convertNumberToString, getLength));
+expectType<number | null>(runIf(aNumberOrNull, convertNumberToString, getLength));
+expectType<string | null>(runIf(aNumberOrNull, convertNumberToString, getLength, convertNumberToString));
+expectType<Promise<number> | null>(runIf(aNumberOrNull, asyncConvertNumberToString, getLength));
+expectType<Promise<number> | Promise<null>>(runIf(aNumeralOrNullPromise, convertNumberToString, getLength));
+// apply with callbacks which return values of different types.
+expectType<number>(apply(aNumber, convertNumberToString, increment));
+expectType<number>(apply(aNumber, doNothing, increment));
+expectType<number>(apply(aNumber, returnNull, increment));
+expectType<Promise<number>>(apply(aNumber, convertNumberToString, asyncIncrement));
+expectType<Promise<number>>(apply(aNumber, doNothing, asyncIncrement));
+expectType<Promise<number>>(apply(aNumeralPromise, doNothing, increment));
+// apply with a callback which is only sometimes asynchronous.
+expectType<number | Promise<number>>(apply(aNumber, increment, maybeAsyncIncrement));
+// apply keeps the type of its value as passed, literal types included, as it always did for a single callback.
+expectType<Promise<1>>(apply(1, increment, asyncIncrement));
+// run and runIf with four or five callbacks which change the type of the value, or which are asynchronous or null-ish
+// in the middle of the chain.
+expectType<number>(run(aNumber, convertNumberToString, getLength, convertNumberToString, getLength));
+expectType<string>(run(aNumber, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString));
+expectType<Promise<number>>(run(aNumber, convertNumberToString, getLength, asyncConvertNumberToString, getLength));
+expectType<Promise<string>>(run(aNumeralPromise, convertNumberToString, getLength, convertNumberToString, getLength, convertNumberToString));
+expectType<number | null>(runIf(aNumberOrNull, convertNumberToString, getLength, convertNumberToString, getLength));
+expectType<Promise<number> | null>(runIf(aNumberOrNull, convertNumberToString, getLength, asyncConvertNumberToString, getLength));
+expectType<null>(runIf(aNumber, convertNumberToString, getLength, returnNull, convertNumberToString));
+expectType<Promise<null>>(runIf(aNumeralPromise, convertNumberToString, getLength, returnNull, convertNumberToString, getLength));
+// apply with callbacks spread from an array rather than a tuple.
+declare const asyncCallbacks: Array<(value: number) => Promise<void>>;
+declare const syncCallbacks: Array<(value: number) => void>;
+declare const maybeAsyncCallbacks: Array<(value: number) => void | Promise<void>>;
+expectType<Promise<number>>(apply(aNumber, ...asyncCallbacks));
+expectType<number | Promise<number>>(apply(aNumber, ...maybeAsyncCallbacks));
+expectType<Promise<number>>(apply(aNumber, increment, ...asyncCallbacks));
+expectType<Promise<number>>(apply(aNumeralPromise, ...maybeAsyncCallbacks));
+expectType<Promise<number>>(apply(aNumber, ...syncCallbacks, asyncIncrement));
+expectType<Promise<number>>(apply(aNumber, increment, ...syncCallbacks, asyncIncrement));
+expectType<number | Promise<number>>(apply(aNumber, ...syncCallbacks, ...asyncCallbacks));
+expectType<number | Promise<number>>(apply(aNumber, increment, ...syncCallbacks, ...asyncCallbacks));
+expectType<Promise<number>>(apply(aNumber, increment, ...syncCallbacks, ...asyncCallbacks, asyncIncrement));
+expectType<number | Promise<number>>(apply(aNumber, increment, increment, ...asyncCallbacks));
+apply(aNumber, increment, ...syncCallbacks, value => expectType<number>(value));
+// apply with callbacks forwarded from a generic wrapper, which keep their types, also when there are none.
+const forwardAfter = <U extends Array<(value: number) => void>>(...callbacks: U) => apply(aNumber, increment, ...callbacks);
+const forwardAround = <U extends Array<(value: number) => void>>(...callbacks: U) => apply(aNumber, increment, ...callbacks, asyncIncrement);
+expectType<number>(forwardAfter(increment));
+expectType<Promise<number>>(forwardAfter(asyncIncrement));
+expectType<number>(forwardAfter());
+expectType<Promise<number>>(forwardAround());
+const noCallbacks: never[] = [];
+expectType<number>(apply(aNumber, increment, ...noCallbacks));
+// apply keeps the context in a chain whose callbacks return different types.
+expectType<number>(context.apply(aNumber, increment, function (value) {
+	expectType<typeof context>(this);
+}));
+expectType<number>(context.apply(aNumber, function (value) {
+	expectType<typeof context>(this);
+}, ...syncCallbacks));

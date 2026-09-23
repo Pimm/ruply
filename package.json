@@ -21,6 +21,7 @@
     "jest": "^29.3.1",
     "rollup": "^3.5.1",
     "tsd": "^0.25.0",
+    "tsd-floor": "npm:tsd@0.19.1",
     "typescript": "^4.9.3"
   },
   "scripts": {
