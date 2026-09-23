@@ -70,6 +70,8 @@ function build(name, logic) {
  * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
  * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
  * If the promise rejects, the passed callback is skipped.
+ * Promise-like values count as well: any object with a `then` method is treated as a promise, provided that method
+ * behaves like a native promise's.
  *
  * #### Chains
  *
@@ -98,6 +100,8 @@ export const run =
  * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
  * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
  * If the value to which the promise resolves is null-ish or the promise rejects, the passed callback is skipped.
+ * Promise-like values count as well: any object with a `then` method is treated as a promise, provided that method
+ * behaves like a native promise's.
  *
  * #### Chains
  *
@@ -126,6 +130,8 @@ export const run =
  * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
  * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
  * If the promise rejects, the passed callback is skipped.
+ * Promise-like values count as well: any object with a `then` method is treated as a promise, provided that method
+ * behaves like a native promise's.
  *
  * #### Chains
  *

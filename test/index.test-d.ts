@@ -21,6 +21,8 @@ const returnNumberOrNull = (value: number) => value > 0 ? value : null;
 const asyncReturnNumberOrNull = async (value: number) => value > 0 ? value : null;
 const maybeAsyncIncrement = (value: number) => value > 0 ? value + 1 : Promise.resolve(value + 1);
 const getLength = (value: string) => value.length;
+const aNumeralOrNullPromiseLike = Promise.resolve<number | null>(1) as PromiseLike<number | null>;
+const aNumeralQuery = Promise.resolve(1) as Pick<Promise<number>, 'then' | 'catch' | 'finally'>;
 const aNumeralPromiseLike = Promise.resolve(1) as PromiseLike<number>;
 const promiseLikeIncrement = (value: number): PromiseLike<number> => Promise.resolve(value + 1);
 const doNothing = (value: number) => {};
@@ -243,6 +245,42 @@ const applyToPromise = <T>(promise: Promise<T>): Promise<T> => apply(promise, ()
 // A generic value with an asynchronous callback: the result is a promise, though a deferred one which an async
 // function has to await before returning it.
 const awaitedInWrapper = async <T>(value: T): Promise<number> => await run(value, async () => 1);
+// Promise-like values and callbacks: objects with a then method which are not promises.
+expectType<PromiseLike<string>>(run(aNumeralPromiseLike, convertNumberToString));
+expectType<PromiseLike<string> | PromiseLike<null>>(runIf(aNumeralOrNullPromiseLike, convertNumberToString));
+expectType<PromiseLike<number>>(apply(aNumeralPromiseLike, convertNumberToString));
+runIf(aNumeralOrNullPromiseLike, value => expectType<number>(value));
+apply(aNumeralPromiseLike, value => expectType<number>(value));
+expectType<PromiseLike<number>>(run(aNumber, promiseLikeIncrement));
+expectType<PromiseLike<string>>(run(aNumber, promiseLikeIncrement, convertNumberToString));
+expectType<PromiseLike<number>>(apply(aNumber, promiseLikeIncrement));
+expectType<PromiseLike<string> | PromiseLike<null>>(runIf(aNumeralOrNullPromiseLike, increment, convertNumberToString));
+expectType<PromiseLike<never>>(run(aNumeralPromiseLike, throwError));
+expectType<PromiseLike<null>>(runIf(aNumeralOrNullPromiseLike, throwError));
+// The first asynchronous step decides whether a promise or a promise-like is returned.
+expectType<Promise<string>>(run(aNumeralPromise, promiseLikeIncrement, convertNumberToString));
+expectType<PromiseLike<string>>(run(aNumeralPromiseLike, asyncIncrement, convertNumberToString));
+// Promise-like values whose then method returns promises (such as query builders) result in promises; apply returns
+// such a value as its own type, as it does any value.
+expectType<Promise<string>>(run(aNumeralQuery, convertNumberToString));
+expectType<Promise<string> | Promise<null>>(runIf(aNumeralQuery, returnNumberOrNull, convertNumberToString));
+expectType<typeof aNumeralQuery>(apply(aNumeralQuery, convertNumberToString));
+expectType<Promise<never>>(apply(aNumeralQuery, throwError));
+// Generic wrappers over promise-likes receive the resolved value (resolved all the way, as Awaited does) and come back as
+// promise-likes.
+const forwardPromiseLike = <T>(promise: PromiseLike<T>): PromiseLike<T> => run(promise, value => { const resolved: T = value; return resolved; });
+const mapPromiseLike = <T, R>(promise: PromiseLike<T>, callback: (value: T) => R): PromiseLike<R> => run(promise, callback);
+const forwardNullablePromiseLike = <T>(promise: PromiseLike<T | null>): PromiseLike<T | null> => runIf(promise, value => { const resolved: T | null = value; return resolved; });
+const applyToPromiseLike = <T>(promise: PromiseLike<T>): PromiseLike<T> => apply(promise, value => { const resolved: T = value; });
+// Known limitation: with a value of an unconstrained generic type, or of type any, the kind of promise which results is
+// unknown too (a promise-like value yields a promise-like), so the result cannot be assigned to `Promise` outright,
+// whether the callback is asynchronous or not; a `PromiseLike` annotation, a constraint or an `await` is needed.
+expectError(<T>(value: T): Promise<number> => run(value, async () => 1));
+expectError(<T>(value: T) => { const promise: Promise<number> = run(value, async () => 1); return promise; });
+expectError(<T>(value: T): string | Promise<string> => run(value, convertNumberToString as (value: unknown) => string));
+const describeMaybeAsync = <T>(value: T): string | PromiseLike<string> => run(value, convertNumberToString as (value: unknown) => string);
+declare const anAny: any;
+expectType<string | Promise<string> | PromiseLike<string>>(run(anAny, convertNumberToString));
 // Callbacks are called with the context in which run[If] or apply is called.
 const context = { factor: 2, run, runIf, apply };
 expectType<number>(context.run(aNumber, function (value) {

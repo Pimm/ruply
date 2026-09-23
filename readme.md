@@ -195,7 +195,7 @@ return apply(
 	() => console.log(`${performance.now() - start} ms`)
 );
 ```
-The `await` keyword is optional, as `apply` is promise-aware.
+The `await` keyword is optional, as `apply` is promise-aware. Promise-like values count as well: any object with a `then` method is treated as a promise, not just native promises. ruply calls that `then` and returns its result, so this assumes it behaves like a native promise's.
 
 ## Optional chain
 

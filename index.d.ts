@@ -3,60 +3,75 @@
  */
 type Nullish = null | undefined | void;
 /**
- * Like `Extract` except that if `T` is a promise, the extraction logic is applied to the type of the values to which
- * the promise resolves instead of to `T` directly.
+ * A promise of the same kind as the promise-like `T` which resolves to values of type `A`: a `Promise` if the `then`
+ * method of `T` returns promises, a `PromiseLike` otherwise. Any promise-like object (one whose `then` method takes the
+ * callbacks a promise's does) counts as a promise here and in every helper below, as it does at runtime.
  *
- * Two things hold here and in every helper below. Any promise-like object (one whose `then` method takes the callbacks
- * a promise's does) counts as a promise, as it does at runtime: a chain which passes through one is typed as a
- * `Promise` from then on. And promises are written with a bare type parameter as their argument (`Promise<A>`, never
- * `Promise<Awaited<R>>`): TypeScript only recognises two promises of the same type as one and the same if they are
- * written that way, and would otherwise produce unions such as `Promise<null> | Promise<null>`.
+ * Promises are written with a bare type parameter as their argument (`Promise<A>`, never `Promise<Awaited<R>>`):
+ * TypeScript only recognises two promises of the same type as one and the same if they are written that way, and
+ * would otherwise produce unions such as `Promise<null> | Promise<null>`.
  */
-type ExtractAsynchronous<T, U> = T extends PromiseLike<infer A> ? A extends U ? Promise<A> : never : T extends U ? T : never;
+type Rewrap<T, A> = T extends { then(...a: Array<any>): Promise<any> } ? Promise<A> : PromiseLike<A>;
 /**
- * `T` without promises which always reject (`Promise<never>`) if `T` or `E` includes other promises: a promise which
- * always rejects adds nothing to a union which is asynchronous anyway, as any promise may reject. Inside a `runIf`
- * chain, a step which is always null-ish and one which always throws both end the chain, and once the chain is
- * asynchronous, both end it as a rejection; the former, though, has already contributed the promise of its null-ish
- * value (in `E`, the exits of the chain), next to which the rejection is redundant. Applied to `runIf` only, whose
- * own design puts the rejection there: one which a callback of `run` or `apply` itself may produce
+ * Like `Extract` except that if `T` is promise-like, the extraction logic is applied to the type of the values to which
+ * it resolves instead of to `T` directly.
+ */
+type ExtractAsynchronous<T, U> = T extends PromiseLike<infer A> ? A extends U ? Rewrap<T, A> : never : T extends U ? T : never;
+/**
+ * `T` without promises which always reject (`Promise<never>`, `PromiseLike<never>`) if `T` or `E` includes other
+ * promises: a promise which always rejects adds nothing to a union which is asynchronous anyway, as any promise may
+ * reject. Inside a `runIf` chain, a step which is always null-ish and one which always throws both end the chain, and
+ * once the chain is asynchronous, both end it as a rejection; the former, though, has already contributed the promise
+ * of its null-ish value (in `E`, the exits of the chain), next to which the rejection is redundant. Applied to `runIf`
+ * only, whose own design puts the rejection there: one which a callback of `run` or `apply` itself may produce
  * (`number | Promise<never>`) stays next to the other promises of the result, which costs precision but not
  * soundness, and saves a consumer's declaration file spelling the result out three times.
  */
-type DropRedundantRejection<T, E = never> = [Extract<T | E, PromiseLike<any>>] extends [PromiseLike<never>] ? T : Exclude<T, Promise<never>>;
+type DropRedundantRejection<T, E = never> = [Extract<T | E, PromiseLike<any>>] extends [PromiseLike<never>] ? T : Exclude<T, PromiseLike<never>>;
 /**
- * The states of a chain of callbacks: still synchronous, turned asynchronous, ended because a step never produces a
- * value (a callback which always throws, or a step no value ever reaches), or ended in a rejection: the asynchronous
- * form of that, once the chain has turned asynchronous (a step which never resolves is a rejection from the start). A
- * chain which is only sometimes asynchronous is in a union of states, over which everything below distributes. The
- * states are numbers rather than names, so that the table below is a tuple, which a consumer's declaration file
- * prints on one line where it would spell out an object over many; the aliases keep the names.
+ * The states of a chain of callbacks: still synchronous, turned asynchronous through a promise or through a
+ * promise-like which is not a promise, ended because a step never produces a value (a callback which always throws, or
+ * a step no value ever reaches), or ended in a rejection: the asynchronous form of that, once the chain has turned
+ * asynchronous (a step which never resolves is a rejection from the start), again of either kind. A chain which is
+ * only sometimes asynchronous is in a union of states, over which everything below distributes. The states are
+ * numbers rather than names, so that the table below is a tuple, which a consumer's declaration file prints on one
+ * line where it would spell out an object over many; the aliases keep the names.
  */
 type Sync = 0;
 type Promised = 1;
-type Ended = 2;
-type Rejects = 3;
-type State = Sync | Promised | Ended | Rejects;
+type Thenable = 2;
+type Ended = 3;
+type Rejects = 4;
+type RejectsThenable = 5;
+type State = Sync | Promised | Thenable | Ended | Rejects | RejectsThenable;
 /**
- * The state a chain enters through a single step which produces values of type `A`: a promise which never resolves
- * (`Promise<never>`, the result of an `async` callback which always throws) is a rejection.
+ * The state a chain enters through a single step which produces values of type `A`: a promise-like whose `then`
+ * method returns promises (a promise, or a query builder which borrows `then` from one) counts as a promise, any other
+ * promise-like as a thenable, and one which never resolves (`Promise<never>`, the result of an `async` callback which
+ * always throws) as a rejection.
  */
 type StepState<A> =
 	[A] extends [never] ? Ended
-	: A extends PromiseLike<infer X> ? ([X] extends [never] ? Rejects : Promised)
-	: Sync;
+	: A extends PromiseLike<infer X>
+		? [X] extends [never]
+			? (A extends { then(...a: Array<any>): Promise<any> } ? Rejects : RejectsThenable)
+			: (A extends { then(...a: Array<any>): Promise<any> } ? Promised : Thenable)
+		: Sync;
 /**
  * The state of a chain in state `S` after a step in state `K`, looked up in a table rather than decided by
  * conditions on `S`, so that `S` is mentioned only once: a consumer's declaration file spells these types out for
  * every step of a chain, and would otherwise grow exponentially with the number of steps. Rows are the chain's state,
- * columns the step's.
+ * columns the step's. A chain keeps the kind of promise it first turned asynchronous with, as it is that step's `then`
+ * which produces the result.
  */
 type Next<S extends State, K extends State> = [
-	//             Sync      Promised  Ended     Rejects   ← the step
-	/* Sync     */ [Sync    , Promised, Ended   , Rejects], // synchronous so far: the step decides
-	/* Promised */ [Promised, Promised, Rejects , Rejects], // a promise stays a promise; a step which never produces a value rejects it
-	/* Ended    */ [Ended   , Ended   , Ended   , Ended  ], // ended: stays ended
-	/* Rejects  */ [Rejects , Rejects , Rejects , Rejects], // rejected: stays rejected
+	//                    Sync             Promised         Thenable         Ended            Rejects          RejectsThenable   ← the step
+	/* Sync            */ [Sync           , Promised       , Thenable       , Ended          , Rejects        , RejectsThenable], // synchronous so far: the step decides
+	/* Promised        */ [Promised       , Promised       , Promised       , Rejects        , Rejects        , Rejects        ], // a promise stays a promise; a step which never produces a value rejects it
+	/* Thenable        */ [Thenable       , Thenable       , Thenable       , RejectsThenable, RejectsThenable, RejectsThenable], // a thenable stays a thenable; a step which never produces a value rejects it
+	/* Ended           */ [Ended          , Ended          , Ended          , Ended          , Ended          , Ended          ], // ended: stays ended
+	/* Rejects         */ [Rejects        , Rejects        , Rejects        , Rejects        , Rejects        , Rejects        ], // rejected: stays rejected
+	/* RejectsThenable */ [RejectsThenable, RejectsThenable, RejectsThenable, RejectsThenable, RejectsThenable, RejectsThenable], // rejected thenable: stays so
 ][S][K];
 /**
  * The state of a chain in state `S` after the steps `U`.
@@ -65,13 +80,14 @@ type Fold<U extends Array<unknown>, S extends State> =
 	U extends [infer A, ...infer B] ? Fold<B, Next<S, StepState<A>>> : S;
 /**
  * The result of a chain in state `S` whose last step produces values of type `R`. `A` is not meant to be passed: it
- * holds the values `R` resolves to, so that the promise is written with a bare type parameter (see
- * `ExtractAsynchronous`).
+ * holds the values `R` resolves to, so that the promises are written with a bare type parameter (see `Rewrap`).
  */
 type Result<S extends State, R, A = Awaited<R>> =
 	S extends Promised ? Promise<A>
+	: S extends Thenable ? PromiseLike<A>
 	: S extends Ended ? never
 	: S extends Rejects ? Promise<never>
+	: S extends RejectsThenable ? PromiseLike<never>
 	: R;
 /**
  * The step which stands in for callbacks spread from an array of type `U`: one which produces the return values of the
@@ -115,6 +131,7 @@ type NullishExit<S extends State, A> = [ExtractAsynchronous<A, Nullish>] extends
  */
 type ExitResult<S extends State, R, A = Awaited<R>> =
 	S extends Promised ? Promise<A>
+	: S extends Thenable ? PromiseLike<A>
 	: S extends Sync ? R
 	: never;
 /**
@@ -125,17 +142,21 @@ type ExitResult<S extends State, R, A = Awaited<R>> =
  */
 type NullishStepState<A> =
 	[Exclude<A, Nullish>] extends [never] ? Ended
-	: A extends PromiseLike<infer X> ? ([Exclude<X, Nullish>] extends [never] ? Rejects : Promised)
-	: A extends Nullish ? never : Sync;
+	: A extends PromiseLike<infer X>
+		? [Exclude<X, Nullish>] extends [never]
+			? (A extends { then(...a: Array<any>): Promise<any> } ? Rejects : RejectsThenable)
+			: (A extends { then(...a: Array<any>): Promise<any> } ? Promised : Thenable)
+		: A extends Nullish ? never : Sync;
 /**
  * The result of passing values of type `T` through the steps `U` and then returning those values themselves rather
- * than the result of the last step. `T` is not a step: if it is a promise, the steps run once it resolves, so the only
- * effect they can have on it is that one which never produces a value turns it into a promise which rejects. Otherwise
- * the steps make `T` asynchronous as they would any result.
+ * than the result of the last step. `T` is not a step: if it is promise-like, the steps run once it resolves, so the
+ * only effect they can have on it is that one which never produces a value turns it into a promise which rejects.
+ * Otherwise the steps make `T` asynchronous as they would any result. (A promise-like `T` is returned as its own type,
+ * although the runtime returns what its `then` produces; the two differ only for thenables which are not promises.)
  */
 type ChainReturningValue<U extends Array<unknown>, T> = ChainReturningValueIn<Fold<U, Sync>, T>;
 type ChainReturningValueIn<S extends State, T> =
-	T extends PromiseLike<any> ? (S extends Ended | Rejects ? Promise<never> : T) : Result<S, T>;
+	T extends PromiseLike<any> ? (S extends Ended | Rejects | RejectsThenable ? Rewrap<T, never> : T) : Result<S, T>;
 /**
  * Calls the passed callback, forwarding the first argument and routing back whatever is returned.
  *
@@ -151,6 +172,8 @@ type ChainReturningValueIn<S extends State, T> =
  * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
  * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
  * If the promise rejects, the passed callback is skipped.
+ * Promise-like values count as well: any object with a `then` method is treated as a promise, provided that method
+ * behaves like a native promise's.
  *
  * #### Chains
  *
@@ -182,6 +205,8 @@ declare function run<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(thi
  * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
  * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
  * If the value to which the promise resolves is null-ish or the promise rejects, the passed callback is skipped.
+ * Promise-like values count as well: any object with a `then` method is treated as a promise, provided that method
+ * behaves like a native promise's.
  *
  * #### Chains
  *
@@ -213,6 +238,8 @@ declare function runIf<T, Z, Y, X, W, R, C>(this: C, value: T, ...callbacks: [(t
  * If the first argument is a promise, the value to which that promise resolves is forwarded to the passed callback
  * instead of the promise itself. As a result, the call to the passed callback is delayed until the promise resolves.
  * If the promise rejects, the passed callback is skipped.
+ * Promise-like values count as well: any object with a `then` method is treated as a promise, provided that method
+ * behaves like a native promise's.
  *
  * #### Chains
  *
